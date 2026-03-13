@@ -1,0 +1,130 @@
+---
+const siteTitle = "labdm-blog";
+const siteDescription = "An Astro-based personal blog deployed to Vercel.";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={siteDescription} />
+    <title>{siteTitle}</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.8);
+        --border: rgba(148, 163, 184, 0.2);
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --accent: #38bdf8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
+          sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 40%),
+          linear-gradient(180deg, #020617 0%, #0f172a 100%);
+      }
+
+      main {
+        width: min(56rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 6rem 0;
+      }
+
+      .hero {
+        padding: 2rem;
+        border: 1px solid var(--border);
+        border-radius: 1.5rem;
+        background: var(--panel);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+      }
+
+      h1 {
+        margin: 0 0 1rem;
+        font-size: clamp(2.5rem, 8vw, 4.75rem);
+        line-height: 0.95;
+      }
+
+      p {
+        max-width: 42rem;
+        margin: 0 0 1.5rem;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.7;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+        padding: 0.45rem 0.85rem;
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        border-radius: 999px;
+        color: var(--accent);
+        font-size: 0.95rem;
+      }
+
+      .grid {
+        display: grid;
+        gap: 1rem;
+        margin-top: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+      }
+
+      .card {
+        padding: 1.25rem;
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        background: rgba(15, 23, 42, 0.55);
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="pill">Astro + Bun + Vercel</div>
+        <h1>Shipping the first version of `labdm-blog`.</h1>
+        <p>
+          This repository now starts from a minimal Astro app with a Bun-first
+          workflow, GitHub branch protection on <code>main</code>, and a Vercel
+          deployment pipeline ready to be connected with project secrets.
+        </p>
+
+        <div class="grid">
+          <article class="card">
+            <strong>Framework</strong>
+            Astro is configured for a static Vercel deployment.
+          </article>
+          <article class="card">
+            <strong>Package Manager</strong>
+            Bun manages installs, scripts, and the lockfile.
+          </article>
+          <article class="card">
+            <strong>Delivery Flow</strong>
+            Pull requests run validation before merge, and deploy jobs can run
+            once Vercel secrets are added.
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
