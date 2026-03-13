@@ -155,7 +155,7 @@ jobs:
         with:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: |
+      cancel-in-progress: false
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
