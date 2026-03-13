@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   pull_request:
   push:
@@ -17,10 +20,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.10"
+
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -54,10 +70,13 @@ jobs:
   deploy_preview:
     name: Vercel Preview
     runs-on: ubuntu-latest
+    concurrency:
+      group: vercel-preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     needs:
       - quality
       - vercel_config
-    if: github.event_name == 'pull_request' && needs.vercel_config.outputs.configured == 'true'
+    if: github.event_name == 'pull_request' && needs.quality.result == 'success' && needs.vercel_config.outputs.configured == 'true'
     env:
       ASTRO_TELEMETRY_DISABLED: "1"
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -68,10 +87,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.10"
+
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -88,10 +120,13 @@ jobs:
   deploy_production:
     name: Vercel Production
     runs-on: ubuntu-latest
+    concurrency:
+      group: vercel-production-main
+      cancel-in-progress: true
     needs:
       - quality
       - vercel_config
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.vercel_config.outputs.configured == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.quality.result == 'success' && needs.vercel_config.outputs.configured == 'true'
     env:
       ASTRO_TELEMETRY_DISABLED: "1"
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -102,10 +137,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.10"
+
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile

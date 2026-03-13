@@ -20,7 +20,7 @@
 Run these before opening or updating a pull request:
 
 ```bash
-bun install
+bun install --frozen-lockfile
 bun run check
 bun run build
 ```
