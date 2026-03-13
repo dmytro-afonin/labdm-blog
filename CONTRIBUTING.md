@@ -21,8 +21,11 @@ Run these before opening or updating a pull request:
 
 ```bash
 bun install --frozen-lockfile
-bun run check
+bun run format:check
+bun run lint
+bun run typecheck
 bun run build
+bun run smoke
 ```
 
 ## Deployment secrets
@@ -42,3 +45,5 @@ Create or link the Vercel project for this repository, then add the required sec
 1. Create the Vercel project for `labdm-blog`.
 2. Copy the Vercel token, org ID, and project ID into the repository secrets.
 3. Re-run the workflow or push a new commit to trigger preview or production deployment.
+
+Preview deployment links are published in the GitHub Actions summary and mirrored into the pull request as a bot comment when the preview job succeeds.
