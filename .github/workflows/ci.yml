@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     concurrency:
       group: vercel-production-main
-      cancel-in-progress: true
+      cancel-in-progress: false
     needs:
       - quality
       - vercel_config
@@ -155,7 +155,7 @@ jobs:
         with:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-      cancel-in-progress: false
+          restore-keys: |
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
