@@ -132,8 +132,11 @@ jobs:
       - name: Deploy preview
         id: deploy
         run: |
-          deployment_url="$(bunx vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN" | tail -1)"
+          set -o pipefail
+          deploy_output="$(bunx vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN" 2>&1)"
+          deployment_url="$(printf '%s' "$deploy_output" | tail -1)"
           if [[ ! "$deployment_url" =~ ^https:// ]]; then
+            printf '%s\n' "$deploy_output"
             echo "::error::Expected a deployment URL from Vercel, got: $deployment_url"
             exit 1
           fi
@@ -170,10 +173,13 @@ jobs:
             const startIdx = body.indexOf(startMarker);
             const endIdx = body.indexOf(endMarker);
 
-            if (startIdx !== -1 && endIdx !== -1) {
+            if (startIdx !== -1 && endIdx !== -1 && startIdx < endIdx) {
               body = body.substring(0, startIdx) + section + body.substring(endIdx + endMarker.length);
             } else {
-              body = body.trimEnd() + "\n\n" + section;
+              let cleaned = body;
+              if (startIdx !== -1) cleaned = cleaned.replace(startMarker, "");
+              if (endIdx !== -1) cleaned = cleaned.replace(endMarker, "");
+              body = cleaned.trimEnd() + "\n\n" + section;
             }
 
             await github.rest.pulls.update({ owner, repo, pull_number, body });
