@@ -24,7 +24,7 @@ bun run dev
 
 Useful scripts:
 
-- `bun run check`
+- `bun run typecheck`
 - `bun run build`
 - `bun run preview`
 
