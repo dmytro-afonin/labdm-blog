@@ -132,11 +132,8 @@ jobs:
       - name: Deploy preview
         id: deploy
         run: |
-          set -o pipefail
-          deploy_output="$(bunx vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN" 2>&1)"
-          deployment_url="$(printf '%s' "$deploy_output" | tail -1)"
+          deployment_url="$(bunx vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN")"
           if [[ ! "$deployment_url" =~ ^https:// ]]; then
-            printf '%s\n' "$deploy_output"
             echo "::error::Expected a deployment URL from Vercel, got: $deployment_url"
             exit 1
           fi
