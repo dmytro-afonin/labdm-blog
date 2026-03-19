@@ -1,0 +1,98 @@
+---
+import { absoluteUrl, getPageTitle, siteConfig } from "../config/site";
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonicalPath?: string;
+  ogType?: "website" | "article";
+}
+
+const {
+  title,
+  description = siteConfig.description,
+  canonicalPath = Astro.url.pathname,
+  ogType = "website",
+} = Astro.props;
+
+const pageTitle = getPageTitle(title);
+const canonicalUrl = absoluteUrl(canonicalPath);
+---
+
+<!doctype html>
+<html lang={siteConfig.lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={siteConfig.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+
+    {
+      siteConfig.feeds.map((feed) => (
+        <link
+          rel="alternate"
+          type={feed.type}
+          title={feed.title}
+          href={absoluteUrl(feed.path)}
+        />
+      ))
+    }
+
+    <style is:global>
+      :root {
+        color-scheme: dark;
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.8);
+        --border: rgba(148, 163, 184, 0.2);
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --accent: #38bdf8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          "Inter",
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(56, 189, 248, 0.18),
+            transparent 40%
+          ),
+          linear-gradient(180deg, #020617 0%, #0f172a 100%);
+      }
+
+      main {
+        width: min(56rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 6rem 0;
+      }
+    </style>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
