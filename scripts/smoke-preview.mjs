@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
@@ -16,7 +16,10 @@ const astroExecutable = resolve(
     ? "../node_modules/.bin/astro.cmd"
     : "../node_modules/.bin/astro",
 );
-const expectedSnippets = ["<title>labdm-blog</title>", "Astro + Bun + Vercel"];
+
+const packageJsonPath = resolve(scriptDirectory, "../package.json");
+const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+const expectedSnippets = packageJson.smoke?.expectedSnippets ?? [];
 
 if (!existsSync(distIndexPath)) {
   throw new Error(
@@ -90,13 +93,14 @@ try {
   await waitForPreview();
 
   const response = await fetch(previewUrl);
-  const html = await response.text();
 
   if (!response.ok) {
     throw new Error(
       `Expected HTTP 200 from preview, received ${response.status}.`,
     );
   }
+
+  const html = await response.text();
 
   for (const snippet of expectedSnippets) {
     if (!html.includes(snippet)) {

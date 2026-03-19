@@ -2,7 +2,6 @@ name: CI
 
 permissions:
   contents: read
-  issues: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -30,9 +29,9 @@ jobs:
           node-version: 24
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.3
+        uses: oven-sh/setup-bun@v2.2.0
         with:
-          bun-version: "1.3.10"
+          bun-version: "1.3.11"
 
       - name: Cache Bun packages
         uses: actions/cache@v5
@@ -83,6 +82,9 @@ jobs:
   deploy_preview:
     name: Vercel Preview
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     concurrency:
       group: vercel-preview-${{ github.event.pull_request.number }}
       cancel-in-progress: true
@@ -106,9 +108,9 @@ jobs:
           node-version: 24
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.3
+        uses: oven-sh/setup-bun@v2.2.0
         with:
-          bun-version: "1.3.10"
+          bun-version: "1.3.11"
 
       - name: Cache Bun packages
         uses: actions/cache@v5
@@ -130,22 +132,12 @@ jobs:
       - name: Deploy preview
         id: deploy
         run: |
-          deploy_log="$(mktemp)"
-          bunx vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN" 2>&1 | tee "$deploy_log"
-          deployment_url="$(python3 - "$deploy_log" <<'PY'
-          import pathlib
-          import re
-          import sys
-
-          text = pathlib.Path(sys.argv[1]).read_text()
-          matches = re.findall(r"https://[A-Za-z0-9.-]+\.vercel\.app", text)
-          print(matches[-1] if matches else "")
-          PY
-          )"
-          if [ -z "$deployment_url" ]; then
-            echo "Failed to determine preview deployment URL from Vercel output." >&2
+          deployment_url="$(bunx vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN" | tail -1)"
+          if [[ ! "$deployment_url" =~ ^https:// ]]; then
+            echo "::error::Expected a deployment URL from Vercel, got: $deployment_url"
             exit 1
           fi
+          echo "Preview deployed to: $deployment_url"
           echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
 
       - name: Summarize preview deployment
@@ -154,48 +146,37 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Preview URL: ${{ steps.deploy.outputs.deployment_url }}" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Comment preview URL on pull request
-        continue-on-error: true
+      - name: Append preview URL to pull request body
         uses: actions/github-script@v8
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
         with:
           script: |
-            const marker = "<!-- vercel-preview-link -->";
-            const body = [
-              marker,
+            const startMarker = "<!-- vercel-preview-start -->";
+            const endMarker = "<!-- vercel-preview-end -->";
+            const section = [
+              startMarker,
               "## Preview Deployment",
               "",
               `[Open preview](${process.env.DEPLOYMENT_URL})`,
+              endMarker,
             ].join("\n");
 
             const { owner, repo } = context.repo;
-            const issue_number = context.issue.number;
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number,
-              per_page: 100,
-            });
-            const existing = comments.find((comment) => {
-              return comment.user.type === "Bot" && comment.body?.includes(marker);
-            });
+            const pull_number = context.payload.pull_request.number;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
 
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body,
-              });
+            let body = pr.body || "";
+            const startIdx = body.indexOf(startMarker);
+            const endIdx = body.indexOf(endMarker);
+
+            if (startIdx !== -1 && endIdx !== -1) {
+              body = body.substring(0, startIdx) + section + body.substring(endIdx + endMarker.length);
             } else {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body,
-              });
+              body = body.trimEnd() + "\n\n" + section;
             }
+
+            await github.rest.pulls.update({ owner, repo, pull_number, body });
 
   deploy_production:
     name: Vercel Production
@@ -223,9 +204,9 @@ jobs:
           node-version: 24
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.3
+        uses: oven-sh/setup-bun@v2.2.0
         with:
-          bun-version: "1.3.10"
+          bun-version: "1.3.11"
 
       - name: Cache Bun packages
         uses: actions/cache@v5
