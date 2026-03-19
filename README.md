@@ -30,7 +30,7 @@ Useful scripts:
 
 ## Deployment flow
 
-- Pull requests run the `Quality` GitHub Actions job.
+- Pull requests run formatting, lint, typecheck, build, and smoke validation in the `Quality` job.
 - Vercel preview deploys run automatically on pull requests when Vercel secrets are configured.
 - Production deploys run automatically on pushes to `main` and are expected to serve `https://blog.labdm.dev`.
 
