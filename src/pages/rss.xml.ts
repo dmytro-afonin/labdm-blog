@@ -15,8 +15,8 @@ export function GET() {
   <channel>
     <title>${escapeXml(siteConfig.title)}</title>
     <description>${escapeXml(siteConfig.description)}</description>
-    <link>${siteConfig.url}</link>
-    <language>${siteConfig.lang}</language>
+    <link>${escapeXml(siteConfig.url)}</link>
+    <language>${escapeXml(siteConfig.lang)}</language>
   </channel>
 </rss>`;
 

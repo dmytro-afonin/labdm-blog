@@ -31,3 +31,59 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
   </main>
 </BaseLayout>
+
+<style>
+  .hero {
+    padding: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+  }
+
+  h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(2.5rem, 8vw, 4.75rem);
+    line-height: 0.95;
+  }
+
+  p {
+    max-width: 42rem;
+    margin: 0 0 1.5rem;
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 0.95rem;
+  }
+
+  .grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  }
+
+  .card {
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, 0.55);
+  }
+
+  .card strong {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+</style>
