@@ -32,7 +32,7 @@
   },
   "smoke": {
     "expectedSnippets": [
-      "<title>labdm-blog</title>",
+      "<title>Dmytro Afonin — labdm blog</title>",
       "Astro + Bun + Vercel"
     ]
   }
