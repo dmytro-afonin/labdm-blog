@@ -29,9 +29,9 @@ jobs:
           node-version: 24
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.3
+        uses: oven-sh/setup-bun@v2.2.0
         with:
-          bun-version: "1.3.10"
+          bun-version: "1.3.11"
 
       - name: Cache Bun packages
         uses: actions/cache@v5
@@ -44,11 +44,20 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Run Astro checks
-        run: bun run check
+      - name: Check formatting
+        run: bun run format:check
+
+      - name: Lint code
+        run: bun run lint
+
+      - name: Run type checks
+        run: bun run typecheck
 
       - name: Build site
         run: bun run build
+
+      - name: Run smoke validation
+        run: bun run smoke
 
   vercel_config:
     name: Vercel Config
@@ -73,6 +82,9 @@ jobs:
   deploy_preview:
     name: Vercel Preview
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     concurrency:
       group: vercel-preview-${{ github.event.pull_request.number }}
       cancel-in-progress: true
@@ -96,9 +108,9 @@ jobs:
           node-version: 24
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.3
+        uses: oven-sh/setup-bun@v2.2.0
         with:
-          bun-version: "1.3.10"
+          bun-version: "1.3.11"
 
       - name: Cache Bun packages
         uses: actions/cache@v5
@@ -118,7 +130,58 @@ jobs:
         run: bunx vercel build --token="$VERCEL_TOKEN"
 
       - name: Deploy preview
-        run: bunx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+        id: deploy
+        run: |
+          deployment_url="$(bunx vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN")"
+          if [[ ! "$deployment_url" =~ ^https:// ]]; then
+            echo "::error::Expected a deployment URL from Vercel, got: $deployment_url"
+            exit 1
+          fi
+          echo "Preview deployed to: $deployment_url"
+          echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize preview deployment
+        run: |
+          echo "### Preview Deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Preview URL: ${{ steps.deploy.outputs.deployment_url }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Append preview URL to pull request body
+        continue-on-error: true
+        uses: actions/github-script@v8
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
+        with:
+          script: |
+            const startMarker = "<!-- vercel-preview-start -->";
+            const endMarker = "<!-- vercel-preview-end -->";
+            const section = [
+              startMarker,
+              "## Preview Deployment",
+              "",
+              `[Open preview](${process.env.DEPLOYMENT_URL})`,
+              endMarker,
+            ].join("\n");
+
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
+
+            let body = pr.body || "";
+            const startIdx = body.indexOf(startMarker);
+            const endIdx = body.indexOf(endMarker);
+
+            if (startIdx !== -1 && endIdx !== -1 && startIdx < endIdx) {
+              body = body.substring(0, startIdx) + section + body.substring(endIdx + endMarker.length);
+            } else {
+              let cleaned = body;
+              if (startIdx !== -1) cleaned = cleaned.replace(startMarker, "");
+              if (endIdx !== -1) cleaned = cleaned.replace(endMarker, "");
+              cleaned = cleaned.replace(/\n*## Preview Deployment\n+\[Open preview\]\([^)]*\)\n*/g, "\n");
+              body = cleaned.trimEnd() + "\n\n" + section;
+            }
+
+            await github.rest.pulls.update({ owner, repo, pull_number, body });
 
   deploy_production:
     name: Vercel Production
@@ -146,9 +209,9 @@ jobs:
           node-version: 24
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.3
+        uses: oven-sh/setup-bun@v2.2.0
         with:
-          bun-version: "1.3.10"
+          bun-version: "1.3.11"
 
       - name: Cache Bun packages
         uses: actions/cache@v5

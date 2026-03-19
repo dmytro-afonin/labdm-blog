@@ -2,21 +2,39 @@
   "name": "labdm-blog",
   "type": "module",
   "private": true,
-  "packageManager": "bun@1.3.10",
+  "packageManager": "bun@1.3.11",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "typecheck": "astro check",
+    "lint": "eslint .",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "smoke": "node scripts/smoke-preview.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.7",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "eslint-plugin-astro": "^1.6.0",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-astro": "^0.14.1",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.0",
     "vercel": "^50.32.3"
   },
   "dependencies": {
     "@astrojs/vercel": "^10.0.0",
     "astro": "^6.0.4"
+  },
+  "smoke": {
+    "expectedSnippets": [
+      "<title>labdm-blog</title>",
+      "Astro + Bun + Vercel"
+    ]
   }
 }

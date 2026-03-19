@@ -11,6 +11,7 @@
 ## Deployment
 
 - [ ] Vercel preview deployment succeeded or was intentionally skipped
+- Preview URL:
 
 ## Review readiness
 
