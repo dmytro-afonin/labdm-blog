@@ -172,7 +172,7 @@ jobs:
           echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
 
       - name: Report preview deployment success to GitHub
-        if: success()
+        if: success() && steps.github_preview_deployment.outputs.deployment_id != ''
         uses: ./.github/actions/report-deployment-status
         with:
           deployment-id: ${{ steps.github_preview_deployment.outputs.deployment_id }}
@@ -331,7 +331,7 @@ jobs:
         run: bunx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Report production deployment success to GitHub
-        if: success()
+        if: success() && steps.github_production_deployment.outputs.deployment_id != ''
         uses: ./.github/actions/report-deployment-status
         with:
           deployment-id: ${{ steps.github_production_deployment.outputs.deployment_id }}
