@@ -295,8 +295,6 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      # Canonical prod host (keep in sync with src/config/site.ts)
-      PRODUCTION_SITE_URL: https://blog.labdm.dev
 
     steps:
       - name: Checkout
@@ -322,6 +320,16 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Resolve production site URL
+        id: production_site_url
+        run: |
+          production_site_url="$(bun -e "import { siteConfig } from './src/config/site.ts'; console.log(siteConfig.url)" | tr -d '\r')"
+          if [[ ! "$production_site_url" =~ ^https:// ]]; then
+            echo "::error::Expected an https production URL from src/config/site.ts, got: $production_site_url"
+            exit 1
+          fi
+          echo "production_site_url=$production_site_url" >> "$GITHUB_OUTPUT"
 
       - name: Pull Vercel environment
         run: bunx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
@@ -365,6 +373,7 @@ jobs:
         uses: actions/github-script@v8
         env:
           DEPLOYMENT_ID: ${{ steps.github_production_deployment.outputs.deployment_id }}
+          PRODUCTION_SITE_URL: ${{ steps.production_site_url.outputs.production_site_url }}
         with:
           script: |
             const deploymentId = Number(process.env.DEPLOYMENT_ID);
