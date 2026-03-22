@@ -1,6 +1,5 @@
 ---
 title: "Draft post (not for production feeds)"
-slug: example-draft-post
 description: "Demonstrates draft frontmatter; keep out of prod listings when you add routes."
 pubDate: 2026-03-22
 draft: true
