@@ -215,6 +215,25 @@ jobs:
               description: 'Preview deployment failed',
             });
 
+      - name: Report preview deployment cancellation to GitHub
+        if: cancelled() && steps.github_preview_deployment.outputs.deployment_id != ''
+        uses: actions/github-script@v8
+        env:
+          DEPLOYMENT_ID: ${{ steps.github_preview_deployment.outputs.deployment_id }}
+        with:
+          script: |
+            const deploymentId = Number(process.env.DEPLOYMENT_ID);
+            const { owner, repo } = context.repo;
+            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: deploymentId,
+              state: 'inactive',
+              log_url: logUrl,
+              description: 'Preview deployment cancelled',
+            });
+
       - name: Summarize preview deployment
         run: |
           echo "### Preview Deployment" >> "$GITHUB_STEP_SUMMARY"
@@ -380,4 +399,23 @@ jobs:
               state: 'failure',
               log_url: logUrl,
               description: 'Production deployment failed',
+            });
+
+      - name: Report production deployment cancellation to GitHub
+        if: cancelled() && steps.github_production_deployment.outputs.deployment_id != ''
+        uses: actions/github-script@v8
+        env:
+          DEPLOYMENT_ID: ${{ steps.github_production_deployment.outputs.deployment_id }}
+        with:
+          script: |
+            const deploymentId = Number(process.env.DEPLOYMENT_ID);
+            const { owner, repo } = context.repo;
+            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: deploymentId,
+              state: 'inactive',
+              log_url: logUrl,
+              description: 'Production deployment cancelled',
             });
