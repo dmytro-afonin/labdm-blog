@@ -1,5 +1,3 @@
 {
-  "setup-worktree": [
-    "bun install --frozen-lockfile"
-  ]
+  "setup-worktree": ["bun install --frozen-lockfile"]
 }
