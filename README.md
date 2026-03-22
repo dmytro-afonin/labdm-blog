@@ -6,7 +6,7 @@ A Bun-first Astro blog with GitHub-based delivery and Vercel deployment automati
 
 - Astro for the site
 - Bun for installs and scripts
-- GitHub Actions for validation and deployment orchestration
+- GitHub Actions for validation and Vercel deploy orchestration
 - Vercel for preview and production hosting
 
 ## Production domain assumptions
@@ -30,14 +30,15 @@ Useful scripts:
 
 ## Deployment flow
 
-- Pull requests run formatting, lint, typecheck, build, and smoke validation in the `Quality` job.
-- Vercel preview deploys run automatically on pull requests when Vercel secrets are configured.
-- Production deploys run automatically on pushes to `main` and are expected to serve `https://blog.labdm.dev`.
+- Pull requests and pushes to `main` run the `Quality` job (format, lint, typecheck, build, smoke).
+- **`vercel.json` disables Vercel’s automatic Git deploys** so pushes do not build on Vercel until CI passes.
+- After **Quality** succeeds, GitHub Actions deploys **preview** (on PRs) and **production** (on `main`) with the Vercel CLI and your repo secrets. Deploy jobs are skipped if `VERCEL_*` secrets are missing.
+- Production is expected to serve `https://blog.labdm.dev`.
 
-Required repository secrets for deployment:
+Required repository secrets for deploys:
 
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
 
-See `CONTRIBUTING.md` for the branch protection, PR, and merge policy.
+See `CONTRIBUTING.md` for branch protection and merge policy.

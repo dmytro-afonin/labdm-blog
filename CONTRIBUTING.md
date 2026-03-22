@@ -30,13 +30,13 @@ bun run smoke
 
 ## Deployment secrets
 
-GitHub Actions deploys to Vercel only when these repository secrets are configured:
+GitHub Actions deploys to Vercel only when these repository secrets are set:
 
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
 
-If these secrets are missing, the validation job still runs and the deploy jobs are skipped.
+Automatic Vercel Git deploys are **off** in `vercel.json` (`git.deploymentEnabled: false`) so **Quality must pass before** preview or production deploy jobs run (`needs: quality`). If secrets are missing, Quality still runs; deploy jobs are skipped.
 
 ## Production domain expectation
 
@@ -45,9 +45,7 @@ If these secrets are missing, the validation job still runs and the deploy jobs 
 
 ## Vercel setup
 
-Create or link the Vercel project for this repository, then add the required secrets to GitHub:
-
-1. Create the Vercel project for `labdm-blog`.
-2. Assign `blog.labdm.dev` to the production environment for the project.
-3. Copy the Vercel token, org ID, and project ID into the repository secrets.
-4. Re-run the workflow or push a new commit to trigger preview or production deployment.
+1. Create or link the Vercel project for this repository.
+2. Assign `blog.labdm.dev` to the production environment.
+3. Add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` to the repo secrets (see README).
+4. Push or open a PR to run Quality; deploy jobs run only after Quality succeeds.
