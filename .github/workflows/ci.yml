@@ -153,6 +153,7 @@ jobs:
             core.setOutput('deployment_id', `${deployment.data.id}`);
 
       - name: Mark preview deployment in progress
+        if: steps.github_preview_deployment.outputs.deployment_id != ''
         uses: ./.github/actions/report-deployment-status
         with:
           deployment-id: ${{ steps.github_preview_deployment.outputs.deployment_id }}
@@ -319,6 +320,7 @@ jobs:
             core.setOutput('deployment_id', `${deployment.data.id}`);
 
       - name: Mark production deployment in progress
+        if: steps.github_production_deployment.outputs.deployment_id != ''
         uses: ./.github/actions/report-deployment-status
         with:
           deployment-id: ${{ steps.github_production_deployment.outputs.deployment_id }}
