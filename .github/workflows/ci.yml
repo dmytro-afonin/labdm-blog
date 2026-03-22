@@ -154,6 +154,7 @@ jobs:
 
       - name: Mark preview deployment in progress
         if: steps.github_preview_deployment.outputs.deployment_id != ''
+        continue-on-error: true
         uses: ./.github/actions/report-deployment-status
         with:
           deployment-id: ${{ steps.github_preview_deployment.outputs.deployment_id }}
@@ -194,7 +195,7 @@ jobs:
         uses: ./.github/actions/report-deployment-status
         with:
           deployment-id: ${{ steps.github_preview_deployment.outputs.deployment_id }}
-          state: inactive
+          state: failure
           description: Preview deployment cancelled
 
       - name: Summarize preview deployment
@@ -321,6 +322,7 @@ jobs:
 
       - name: Mark production deployment in progress
         if: steps.github_production_deployment.outputs.deployment_id != ''
+        continue-on-error: true
         uses: ./.github/actions/report-deployment-status
         with:
           deployment-id: ${{ steps.github_production_deployment.outputs.deployment_id }}
@@ -353,5 +355,5 @@ jobs:
         uses: ./.github/actions/report-deployment-status
         with:
           deployment-id: ${{ steps.github_production_deployment.outputs.deployment_id }}
-          state: inactive
+          state: failure
           description: Production deployment cancelled
