@@ -39,6 +39,11 @@ runs:
       with:
         script: |
           const deploymentId = Number(process.env.DEPLOYMENT_ID);
+          if (Number.isNaN(deploymentId)) {
+            throw new Error(
+              `Invalid deployment-id: ${process.env.DEPLOYMENT_ID}`,
+            );
+          }
           const { owner, repo } = context.repo;
           const logUrl =
             process.env.LOG_URL ||
