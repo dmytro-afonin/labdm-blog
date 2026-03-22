@@ -1,0 +1,64 @@
+name: Report Deployment Status
+description: Report a GitHub deployment status for the current workflow run.
+
+inputs:
+  deployment-id:
+    description: GitHub deployment ID to update.
+    required: true
+  state:
+    description: Deployment status state.
+    required: true
+  description:
+    description: Human-readable deployment status description.
+    required: true
+  environment-url:
+    description: Optional environment URL for successful deployments.
+    required: false
+    default: ""
+  log-url:
+    description: Optional log URL override.
+    required: false
+    default: ""
+  auto-inactive:
+    description: Whether to auto-inactivate previous deployments.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Create deployment status
+      uses: actions/github-script@v8
+      env:
+        DEPLOYMENT_ID: ${{ inputs.deployment-id }}
+        STATE: ${{ inputs.state }}
+        DESCRIPTION: ${{ inputs.description }}
+        ENVIRONMENT_URL: ${{ inputs.environment-url }}
+        LOG_URL: ${{ inputs.log-url }}
+        AUTO_INACTIVE: ${{ inputs.auto-inactive }}
+      with:
+        script: |
+          const deploymentId = Number(process.env.DEPLOYMENT_ID);
+          const { owner, repo } = context.repo;
+          const logUrl =
+            process.env.LOG_URL ||
+            `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+
+          const payload = {
+            owner,
+            repo,
+            deployment_id: deploymentId,
+            state: process.env.STATE,
+            log_url: logUrl,
+            description: process.env.DESCRIPTION,
+          };
+
+          if (process.env.ENVIRONMENT_URL) {
+            payload.environment_url = process.env.ENVIRONMENT_URL;
+          }
+
+          if (process.env.AUTO_INACTIVE === "true") {
+            payload.auto_inactive = true;
+          }
+
+          await github.rest.repos.createDeploymentStatus(payload);

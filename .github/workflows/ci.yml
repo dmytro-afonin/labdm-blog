@@ -139,12 +139,10 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            const ref = context.payload.pull_request.head.sha;
-            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const deployment = await github.rest.repos.createDeployment({
               owner,
               repo,
-              ref,
+              ref: context.payload.pull_request.head.sha,
               auto_merge: false,
               required_contexts: [],
               environment: 'preview',
@@ -152,15 +150,14 @@ jobs:
               transient_environment: true,
               description: `Vercel preview for PR #${context.payload.pull_request.number}`,
             });
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: deployment.data.id,
-              state: 'in_progress',
-              log_url: logUrl,
-              description: 'Preview deployment in progress',
-            });
             core.setOutput('deployment_id', `${deployment.data.id}`);
+
+      - name: Mark preview deployment in progress
+        uses: ./.github/actions/report-deployment-status
+        with:
+          deployment-id: ${{ steps.github_preview_deployment.outputs.deployment_id }}
+          state: in_progress
+          description: Preview deployment in progress
 
       - name: Deploy preview
         id: deploy
@@ -175,64 +172,29 @@ jobs:
 
       - name: Report preview deployment success to GitHub
         if: success()
-        uses: actions/github-script@v8
-        env:
-          DEPLOYMENT_ID: ${{ steps.github_preview_deployment.outputs.deployment_id }}
-          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
+        uses: ./.github/actions/report-deployment-status
         with:
-          script: |
-            const deploymentId = Number(process.env.DEPLOYMENT_ID);
-            const deploymentUrl = process.env.DEPLOYMENT_URL;
-            const { owner, repo } = context.repo;
-            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: deploymentId,
-              state: 'success',
-              environment_url: deploymentUrl,
-              log_url: logUrl,
-              auto_inactive: true,
-              description: 'Preview deployment ready',
-            });
+          deployment-id: ${{ steps.github_preview_deployment.outputs.deployment_id }}
+          state: success
+          description: Preview deployment ready
+          environment-url: ${{ steps.deploy.outputs.deployment_url }}
+          auto-inactive: "true"
 
       - name: Report preview deployment failure to GitHub
         if: failure() && steps.github_preview_deployment.outputs.deployment_id != ''
-        uses: actions/github-script@v8
-        env:
-          DEPLOYMENT_ID: ${{ steps.github_preview_deployment.outputs.deployment_id }}
+        uses: ./.github/actions/report-deployment-status
         with:
-          script: |
-            const deploymentId = Number(process.env.DEPLOYMENT_ID);
-            const { owner, repo } = context.repo;
-            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: deploymentId,
-              state: 'failure',
-              log_url: logUrl,
-              description: 'Preview deployment failed',
-            });
+          deployment-id: ${{ steps.github_preview_deployment.outputs.deployment_id }}
+          state: failure
+          description: Preview deployment failed
 
       - name: Report preview deployment cancellation to GitHub
         if: cancelled() && steps.github_preview_deployment.outputs.deployment_id != ''
-        uses: actions/github-script@v8
-        env:
-          DEPLOYMENT_ID: ${{ steps.github_preview_deployment.outputs.deployment_id }}
+        uses: ./.github/actions/report-deployment-status
         with:
-          script: |
-            const deploymentId = Number(process.env.DEPLOYMENT_ID);
-            const { owner, repo } = context.repo;
-            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: deploymentId,
-              state: 'inactive',
-              log_url: logUrl,
-              description: 'Preview deployment cancelled',
-            });
+          deployment-id: ${{ steps.github_preview_deployment.outputs.deployment_id }}
+          state: inactive
+          description: Preview deployment cancelled
 
       - name: Summarize preview deployment
         run: |
@@ -343,7 +305,6 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const deployment = await github.rest.repos.createDeployment({
               owner,
               repo,
@@ -355,76 +316,40 @@ jobs:
               transient_environment: false,
               description: 'Vercel production (CI after Quality)',
             });
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: deployment.data.id,
-              state: 'in_progress',
-              log_url: logUrl,
-              description: 'Production deployment in progress',
-            });
             core.setOutput('deployment_id', `${deployment.data.id}`);
+
+      - name: Mark production deployment in progress
+        uses: ./.github/actions/report-deployment-status
+        with:
+          deployment-id: ${{ steps.github_production_deployment.outputs.deployment_id }}
+          state: in_progress
+          description: Production deployment in progress
 
       - name: Deploy production
         run: bunx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Report production deployment success to GitHub
         if: success()
-        uses: actions/github-script@v8
-        env:
-          DEPLOYMENT_ID: ${{ steps.github_production_deployment.outputs.deployment_id }}
-          PRODUCTION_SITE_URL: ${{ steps.production_site_url.outputs.production_site_url }}
+        uses: ./.github/actions/report-deployment-status
         with:
-          script: |
-            const deploymentId = Number(process.env.DEPLOYMENT_ID);
-            const deploymentUrl = process.env.PRODUCTION_SITE_URL;
-            const { owner, repo } = context.repo;
-            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: deploymentId,
-              state: 'success',
-              environment_url: deploymentUrl,
-              log_url: logUrl,
-              auto_inactive: true,
-              description: 'Production deployment ready',
-            });
+          deployment-id: ${{ steps.github_production_deployment.outputs.deployment_id }}
+          state: success
+          description: Production deployment ready
+          environment-url: ${{ steps.production_site_url.outputs.production_site_url }}
+          auto-inactive: "true"
 
       - name: Report production deployment failure to GitHub
         if: failure() && steps.github_production_deployment.outputs.deployment_id != ''
-        uses: actions/github-script@v8
-        env:
-          DEPLOYMENT_ID: ${{ steps.github_production_deployment.outputs.deployment_id }}
+        uses: ./.github/actions/report-deployment-status
         with:
-          script: |
-            const deploymentId = Number(process.env.DEPLOYMENT_ID);
-            const { owner, repo } = context.repo;
-            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: deploymentId,
-              state: 'failure',
-              log_url: logUrl,
-              description: 'Production deployment failed',
-            });
+          deployment-id: ${{ steps.github_production_deployment.outputs.deployment_id }}
+          state: failure
+          description: Production deployment failed
 
       - name: Report production deployment cancellation to GitHub
         if: cancelled() && steps.github_production_deployment.outputs.deployment_id != ''
-        uses: actions/github-script@v8
-        env:
-          DEPLOYMENT_ID: ${{ steps.github_production_deployment.outputs.deployment_id }}
+        uses: ./.github/actions/report-deployment-status
         with:
-          script: |
-            const deploymentId = Number(process.env.DEPLOYMENT_ID);
-            const { owner, repo } = context.repo;
-            const logUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: deploymentId,
-              state: 'inactive',
-              log_url: logUrl,
-              description: 'Production deployment cancelled',
-            });
+          deployment-id: ${{ steps.github_production_deployment.outputs.deployment_id }}
+          state: inactive
+          description: Production deployment cancelled
