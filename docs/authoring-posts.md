@@ -2,6 +2,12 @@
 
 Posts are Markdown files in **`src/content/posts/`**, one file per article. The filename stem becomes the post ID and URL segment, so use lowercase kebab-case such as `my-first-article.md`.
 
+## Routes
+
+- The blog index lives at **`/`**.
+- Individual articles live at **`/posts/<slug>/`**.
+- The slug comes from the Markdown filename, so `my-first-article.md` becomes **`/posts/my-first-article/`**.
+
 ## Frontmatter
 
 Every post is validated at build time by the schema in [`src/content.config.ts`](../src/content.config.ts).

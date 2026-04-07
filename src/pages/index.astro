@@ -1,55 +1,83 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  formatPostDate,
+  getPostUrl,
+  getVisiblePosts,
+} from "../utils/posts";
+
+const posts = await getVisiblePosts();
 ---
 
-<BaseLayout>
+<BaseLayout canonicalPath="/">
   <main>
     <section class="hero">
-      <div class="pill">Astro + Bun + Vercel</div>
-      <h1>Shipping the first version of `labdm-blog`.</h1>
+      <div class="pill">labdm blog</div>
+      <h1>Writing about AI, developer tools, the web, and the systems around them.</h1>
       <p>
-        This repository now starts from a minimal Astro app with a Bun-first
-        workflow, GitHub branch protection on <code>main</code>, and a Vercel
-        deployment pipeline ready to be connected with project secrets.
+        A markdown-first personal blog built with Astro. The homepage is the
+        reading index, and every article lives on its own dedicated permalink.
       </p>
+    </section>
 
-      <div class="grid">
-        <article class="card">
-          <strong>Framework</strong>
-          Astro is configured for a static Vercel deployment.
-        </article>
-        <article class="card">
-          <strong>Package Manager</strong>
-          Bun manages installs, scripts, and the lockfile.
-        </article>
-        <article class="card">
-          <strong>Delivery Flow</strong>
-          Pull requests run validation before merge, and deploy jobs can run once
-          Vercel secrets are added.
-        </article>
+    <section aria-labelledby="posts-heading">
+      <div class="section-heading">
+        <h2 id="posts-heading">Latest posts</h2>
+        <p>{posts.length} published entries ready to read.</p>
       </div>
+
+      {
+        posts.length === 0 ? (
+          <p class="empty-state">No posts yet. Add a markdown file under <code>src/content/posts/</code> to publish the first article.</p>
+        ) : (
+          <ol class="post-list">
+            {posts.map((post) => {
+              const href = getPostUrl(post);
+              const isDraft = post.data.draft;
+
+              return (
+                <li>
+                  <article class="card">
+                    <div class="meta">
+                      <time datetime={post.data.pubDate.toISOString()}>
+                        {formatPostDate(post.data.pubDate)}
+                      </time>
+                      {isDraft && <span class="draft-pill">Draft preview</span>}
+                    </div>
+
+                    <h3>
+                      <a href={href}>{post.data.title}</a>
+                    </h3>
+
+                    <p>{post.data.excerpt ?? post.data.description}</p>
+
+                    <a class="read-more" href={href}>
+                      Read post
+                    </a>
+                  </article>
+                </li>
+              );
+            })}
+          </ol>
+        )
+      }
     </section>
   </main>
 </BaseLayout>
 
 <style>
   .hero {
-    padding: 2rem;
-    border: 1px solid var(--border);
-    border-radius: 1.5rem;
-    background: var(--panel);
-    backdrop-filter: blur(14px);
-    box-shadow: 0 24px 80px rgb(15 23 42 / 35%);
+    margin-bottom: 2.5rem;
   }
 
   h1 {
     margin: 0 0 1rem;
-    font-size: clamp(2.5rem, 8vw, 4.75rem);
-    line-height: 0.95;
+    font-size: clamp(2.5rem, 7vw, 4.75rem);
+    line-height: 1.02;
   }
 
   p {
-    max-width: 42rem;
+    max-width: 44rem;
     margin: 0 0 1.5rem;
     color: var(--muted);
     font-size: 1.05rem;
@@ -68,22 +96,94 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     font-size: 0.95rem;
   }
 
-  .grid {
+  .section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-heading h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .section-heading p {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .post-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     display: grid;
     gap: 1rem;
-    margin-top: 2rem;
-    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   }
 
   .card {
-    padding: 1.25rem;
+    padding: 1.5rem;
     border: 1px solid var(--border);
-    border-radius: 1rem;
-    background: rgb(15 23 42 / 55%);
+    border-radius: 1.25rem;
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 24px 80px rgb(15 23 42 / 20%);
   }
 
-  .card strong {
-    display: block;
-    margin-bottom: 0.5rem;
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .draft-pill {
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid rgb(56 189 248 / 35%);
+    color: var(--accent);
+  }
+
+  h3 {
+    margin: 0 0 0.75rem;
+    font-size: clamp(1.4rem, 4vw, 1.8rem);
+  }
+
+  h3 a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  h3 a:hover {
+    color: var(--accent);
+  }
+
+  .read-more {
+    display: inline-flex;
+    align-items: center;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .read-more:hover {
+    text-decoration: underline;
+  }
+
+  .empty-state {
+    padding: 1.25rem 1.5rem;
+    border: 1px dashed var(--border);
+    border-radius: 1rem;
+  }
+
+  @media (width <= 720px) {
+    .section-heading {
+      align-items: start;
+      flex-direction: column;
+    }
   }
 </style>
