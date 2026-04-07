@@ -38,7 +38,7 @@
   "smoke": {
     "expectedSnippets": [
       "<title>Dmytro Afonin — labdm blog</title>",
-      "Astro + Bun + Vercel"
+      "Latest posts"
     ]
   }
 }
