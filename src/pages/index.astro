@@ -1,10 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import {
-  formatPostDate,
-  getPostUrl,
-  getVisiblePosts,
-} from "../utils/posts";
+import { formatPostDate, getPostUrl, getVisiblePosts } from "../utils/posts";
 
 const posts = await getVisiblePosts();
 ---
@@ -13,7 +9,9 @@ const posts = await getVisiblePosts();
   <main>
     <section class="hero">
       <div class="pill">labdm blog</div>
-      <h1>Writing about AI, developer tools, the web, and the systems around them.</h1>
+      <h1>
+        Writing about AI, developer tools, the web, and the systems around them.
+      </h1>
       <p>
         A markdown-first personal blog built with Astro. The homepage is the
         reading index, and every article lives on its own dedicated permalink.
@@ -28,7 +26,10 @@ const posts = await getVisiblePosts();
 
       {
         posts.length === 0 ? (
-          <p class="empty-state">No posts yet. Add a markdown file under <code>src/content/posts/</code> to publish the first article.</p>
+          <p class="empty-state">
+            No posts yet. Add a markdown file under{" "}
+            <code>src/content/posts/</code> to publish the first article.
+          </p>
         ) : (
           <ol class="post-list">
             {posts.map((post) => {

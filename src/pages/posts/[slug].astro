@@ -43,13 +43,18 @@ const updatedLabel = post.data.updatedDate
     <article class="post">
       <header class="post-header">
         <p class="meta">
-          Published <time datetime={post.data.pubDate.toISOString()}>{publishedLabel}</time>
+          Published <time datetime={post.data.pubDate.toISOString()}
+            >{publishedLabel}</time
+          >
         </p>
 
         {
           updatedLabel && post.data.updatedDate && (
             <p class="meta">
-              Updated <time datetime={post.data.updatedDate.toISOString()}>{updatedLabel}</time>
+              Updated{" "}
+              <time datetime={post.data.updatedDate.toISOString()}>
+                {updatedLabel}
+              </time>
             </p>
           )
         }
@@ -163,13 +168,8 @@ const updatedLabel = post.data.updatedDate
 
   .prose code {
     font-family:
-      SFMono-Regular,
-      ui-monospace,
-      "Cascadia Code",
-      "Source Code Pro",
-      Menlo,
-      Consolas,
-      monospace;
+      SFMono-Regular, ui-monospace, "Cascadia Code", "Source Code Pro", Menlo,
+      Consolas, monospace;
   }
 
   .prose pre {
