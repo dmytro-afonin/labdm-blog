@@ -1,6 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { formatPostDate, getPostUrl, getVisiblePosts } from "../utils/posts";
+import {
+  formatPostDate,
+  getPostUrl,
+  getReadingTimeLabel,
+  getVisiblePosts,
+} from "../utils/posts";
 
 const posts = await getVisiblePosts();
 ---
@@ -43,6 +48,7 @@ const posts = await getVisiblePosts();
                       <time datetime={post.data.pubDate.toISOString()}>
                         {formatPostDate(post.data.pubDate)}
                       </time>
+                      <span>{getReadingTimeLabel(post)}</span>
                       {isDraft && <span class="draft-pill">Draft preview</span>}
                     </div>
 
