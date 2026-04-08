@@ -32,7 +32,7 @@ Useful scripts:
 
 - Pull requests and pushes to `main` run the `Quality` job (format, lint, typecheck, build, smoke).
 - `**vercel.json**` disables Vercel’s automatic Git deploys so pushes do not build on Vercel until CI passes.
-- After **Quality** succeeds, GitHub Actions deploys **preview** (on PRs) and **production** (on `main`) with the Vercel CLI and your repo secrets. Deploy jobs are skipped if `VERCEL_`* secrets are missing.
+- After **Quality** succeeds, GitHub Actions deploys **preview** (on PRs) and **production** (on `main`) with the Vercel CLI and your repo secrets. Deploy jobs are skipped if `VERCEL_`\* secrets are missing.
 - Production is expected to serve `https://blog.labdm.dev`.
 
 Required repository secrets for deploys:
