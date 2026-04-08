@@ -28,4 +28,13 @@ export default [
       },
     },
   },
+  {
+    files: [".cursor/hooks/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        Bun: "readonly",
+      },
+    },
+  },
 ];

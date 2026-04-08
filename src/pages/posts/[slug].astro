@@ -5,6 +5,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import {
   formatPostDate,
   getPostUrl,
+  getReadingTimeLabel,
   getVisiblePosts,
   type BlogPost,
 } from "../../utils/posts";
@@ -12,23 +13,31 @@ import {
 export async function getStaticPaths() {
   const posts = await getVisiblePosts();
 
-  return posts.map((post) => ({
-    params: { slug: post.id },
-    props: { post },
-  }));
+  return posts.map((post, i) => {
+    const newerPost = i > 0 ? (posts.at(i - 1) ?? null) : null;
+    const olderPost = i < posts.length - 1 ? (posts.at(i + 1) ?? null) : null;
+
+    return {
+      params: { slug: post.id },
+      props: { post, newerPost, olderPost },
+    };
+  });
 }
 
 interface Props {
   post: BlogPost;
+  newerPost: BlogPost | null;
+  olderPost: BlogPost | null;
 }
 
-const { post } = Astro.props;
+const { post, newerPost, olderPost } = Astro.props;
 const { Content } = await render(post);
 
 const publishedLabel = formatPostDate(post.data.pubDate);
 const updatedLabel = post.data.updatedDate
   ? formatPostDate(post.data.updatedDate)
   : null;
+const readingTimeLabel = getReadingTimeLabel(post);
 ---
 
 <BaseLayout
@@ -42,22 +51,27 @@ const updatedLabel = post.data.updatedDate
 
     <article class="post">
       <header class="post-header">
-        <p class="meta">
-          Published <time datetime={post.data.pubDate.toISOString()}
-            >{publishedLabel}</time
-          >
-        </p>
+        <div class="post-meta" aria-label="Post metadata">
+          <p class="meta">
+            Published{" "}
+            <time datetime={post.data.pubDate.toISOString()}>
+              {publishedLabel}
+            </time>
+          </p>
 
-        {
-          updatedLabel && post.data.updatedDate && (
-            <p class="meta">
-              Updated{" "}
-              <time datetime={post.data.updatedDate.toISOString()}>
-                {updatedLabel}
-              </time>
-            </p>
-          )
-        }
+          {
+            updatedLabel && post.data.updatedDate && (
+              <p class="meta">
+                Updated{" "}
+                <time datetime={post.data.updatedDate.toISOString()}>
+                  {updatedLabel}
+                </time>
+              </p>
+            )
+          }
+
+          <p class="meta">{readingTimeLabel}</p>
+        </div>
 
         <h1>{post.data.title}</h1>
         <p class="description">{post.data.description}</p>
@@ -77,6 +91,26 @@ const updatedLabel = post.data.updatedDate
         <Content />
       </div>
     </article>
+
+    {
+      (newerPost || olderPost) && (
+        <nav class="post-pagination" aria-label="Adjacent posts">
+          {newerPost && (
+            <a class="post-pagination-link" href={getPostUrl(newerPost)}>
+              <span class="post-pagination-label">Newer post</span>
+              <span class="post-pagination-title">{newerPost.data.title}</span>
+            </a>
+          )}
+
+          {olderPost && (
+            <a class="post-pagination-link" href={getPostUrl(olderPost)}>
+              <span class="post-pagination-label">Older post</span>
+              <span class="post-pagination-title">{olderPost.data.title}</span>
+            </a>
+          )}
+        </nav>
+      )
+    }
   </main>
 </BaseLayout>
 
@@ -106,8 +140,15 @@ const updatedLabel = post.data.updatedDate
     margin-bottom: 2rem;
   }
 
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
   .meta {
-    margin: 0 0 0.5rem;
+    margin: 0;
     color: var(--muted);
     font-size: 0.95rem;
   }
@@ -184,5 +225,38 @@ const updatedLabel = post.data.updatedDate
     padding-left: 1rem;
     border-left: 3px solid rgb(56 189 248 / 35%);
     color: var(--muted);
+  }
+
+  .post-pagination {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .post-pagination-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--panel);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .post-pagination-link:hover {
+    border-color: rgb(56 189 248 / 35%);
+  }
+
+  .post-pagination-label {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .post-pagination-title {
+    color: var(--accent);
+    font-weight: 600;
   }
 </style>

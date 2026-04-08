@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/cursor-hooks@latest/schema/hooks.schema.json",
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "bun ./.cursor/hooks/after-file-edit.mjs"
+      }
+    ],
+    "stop": [
+      {
+        "command": "bun ./.cursor/hooks/on-stop.mjs"
+      }
+    ]
+  }
+}
