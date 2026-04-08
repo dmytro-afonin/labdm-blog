@@ -44,7 +44,10 @@ export function getReadingTimeLabel(post: Pick<BlogPost, "body">) {
   return formatReadingTime(getReadingTimeMinutes(post));
 }
 
-export function getAdjacentPosts(posts: BlogPost[], currentPostId: BlogPost["id"]) {
+export function getAdjacentPosts(
+  posts: BlogPost[],
+  currentPostId: BlogPost["id"],
+) {
   const currentIndex = posts.findIndex((post) => post.id === currentPostId);
 
   if (currentIndex === -1) {
@@ -56,8 +59,7 @@ export function getAdjacentPosts(posts: BlogPost[], currentPostId: BlogPost["id"
 
   return {
     newerPost: currentIndex > 0 ? posts[currentIndex - 1] : null,
-    olderPost:
-      currentIndex < posts.length - 1 ? posts[currentIndex + 1] : null,
+    olderPost: currentIndex < posts.length - 1 ? posts[currentIndex + 1] : null,
   };
 }
 

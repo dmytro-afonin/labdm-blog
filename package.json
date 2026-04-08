@@ -14,6 +14,11 @@
     "lint:styles": "stylelint \"src/**/*.{astro,css}\" --allow-empty-input",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "test": "bun run typecheck",
+    "verify": "bun run build && bun run test",
+    "verify:push": "bun run format:check && bun run lint && bun run typecheck && bun run build && bun run smoke",
+    "setup:git-hooks": "git config core.hooksPath .githooks",
+    "postinstall": "node scripts/postinstall-clis.mjs",
     "smoke": "node scripts/smoke-preview.mjs"
   },
   "devDependencies": {

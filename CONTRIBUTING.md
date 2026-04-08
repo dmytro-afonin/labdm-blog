@@ -49,3 +49,4 @@ Automatic Vercel Git deploys are **off** in `vercel.json` (`git.deploymentEnable
 2. Assign `blog.labdm.dev` to the production environment.
 3. Add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` to the repo secrets (see README).
 4. Push or open a PR to run Quality; deploy jobs run only after Quality succeeds.
+
