@@ -4,7 +4,6 @@ import { render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import {
   formatPostDate,
-  getAdjacentPosts,
   getPostUrl,
   getReadingTimeLabel,
   getVisiblePosts,
@@ -14,8 +13,9 @@ import {
 export async function getStaticPaths() {
   const posts = await getVisiblePosts();
 
-  return posts.map((post) => {
-    const { newerPost, olderPost } = getAdjacentPosts(posts, post.id);
+  return posts.map((post, i) => {
+    const newerPost = i > 0 ? (posts.at(i - 1) ?? null) : null;
+    const olderPost = i < posts.length - 1 ? (posts.at(i + 1) ?? null) : null;
 
     return {
       params: { slug: post.id },
@@ -53,9 +53,10 @@ const readingTimeLabel = getReadingTimeLabel(post);
       <header class="post-header">
         <div class="post-meta" aria-label="Post metadata">
           <p class="meta">
-            Published <time datetime={post.data.pubDate.toISOString()}
-              >{publishedLabel}</time
-            >
+            Published{" "}
+            <time datetime={post.data.pubDate.toISOString()}>
+              {publishedLabel}
+            </time>
           </p>
 
           {

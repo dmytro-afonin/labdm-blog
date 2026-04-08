@@ -26,8 +26,26 @@ export function formatPostDate(date: Date) {
   }).format(date);
 }
 
+function normalizeMarkdownBodyForWordCount(body: string | undefined) {
+  if (body === undefined || body === "") {
+    return "";
+  }
+
+  let text = body;
+  text = text.replace(/```[\s\S]*?```/g, " ");
+  text = text.replace(/`[^`\n]+`/g, " ");
+  text = text.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1 ");
+  text = text.replace(/!\[([^\]]*)\]\s*\[[^\]]*\]/g, "$1 ");
+  text = text.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1 ");
+  text = text.replace(/\[([^\]]+)\]\s*\[[^\]]*\]/g, "$1 ");
+  text = text.replace(/<[^>]+>/g, " ");
+
+  return text;
+}
+
 function countWords(content: string | undefined) {
-  const matches = content?.match(/\b[\w'-]+\b/g);
+  const normalized = normalizeMarkdownBodyForWordCount(content);
+  const matches = normalized.match(/\b[\w'-]+\b/g);
 
   return matches?.length ?? 0;
 }
@@ -42,25 +60,6 @@ export function formatReadingTime(minutes: number) {
 
 export function getReadingTimeLabel(post: Pick<BlogPost, "body">) {
   return formatReadingTime(getReadingTimeMinutes(post));
-}
-
-export function getAdjacentPosts(
-  posts: BlogPost[],
-  currentPostId: BlogPost["id"],
-) {
-  const currentIndex = posts.findIndex((post) => post.id === currentPostId);
-
-  if (currentIndex === -1) {
-    return {
-      newerPost: null,
-      olderPost: null,
-    };
-  }
-
-  return {
-    newerPost: currentIndex > 0 ? posts[currentIndex - 1] : null,
-    olderPost: currentIndex < posts.length - 1 ? posts[currentIndex + 1] : null,
-  };
 }
 
 export async function getVisiblePosts() {
