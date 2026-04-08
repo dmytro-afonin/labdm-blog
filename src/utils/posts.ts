@@ -21,13 +21,12 @@ export function getPostUrl(post: Pick<BlogPost, "id">) {
 export function formatPostDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
     dateStyle: "long",
+    timeZone: "UTC",
   }).format(date);
 }
 
 export async function getVisiblePosts() {
-  const posts = await getCollection("posts", ({ data }) => {
-    return import.meta.env.DEV || !data.draft;
-  });
+  const posts = await getCollection("posts", isVisiblePost);
 
   return sortPosts(posts);
 }
