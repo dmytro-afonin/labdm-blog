@@ -15,6 +15,9 @@
  *
  * Node version for fnm / nvm / asdf: see `.node-version` in the repo root.
  * Bun must be installed separately (see https://bun.sh ).
+ *
+ * Git: sets `core.hooksPath` to `.githooks` when unset (skipped in CI and when
+ * SKIP_GIT_HOOKS_SETUP=1). Optional CLIs are skipped when CI or SKIP_OPTIONAL_CLIS=1.
  */
 
 import { spawnSync } from "node:child_process";
@@ -25,10 +28,8 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const log = (msg) => console.log(`[postinstall-clis] ${msg}`);
 
-if (process.env.CI === "true" || process.env.SKIP_OPTIONAL_CLIS === "1") {
-  log("Skipping optional global CLIs (CI or SKIP_OPTIONAL_CLIS=1).");
-  process.exit(0);
-}
+const isCi = process.env.CI === "true";
+const skipOptionalClis = isCi || process.env.SKIP_OPTIONAL_CLIS === "1";
 
 function hasCmd(name) {
   if (process.platform === "win32") {
@@ -154,73 +155,119 @@ function tryFnmSyncNode() {
   }
 }
 
-log(
-  "Project CLIs: use `bunx vercel`, `bunx astro`, `bunx eslint`, etc. (from devDependencies).",
-);
-
-if (!process.env.SKIP_CODERABBIT_CLI) {
-  if (hasCmd("cr") || hasCmd("coderabbit")) {
-    const cmd = hasCmd("coderabbit") ? "coderabbit" : "cr";
-    log(`CodeRabbit CLI already on PATH (use \`${cmd}\`).`);
-  } else {
-    let ok = false;
-    if (process.platform === "darwin") {
-      ok = brewInstallCask("coderabbit", "CodeRabbit CLI");
-      if (!ok) {
-        log(
-          "CodeRabbit CLI: run `brew install --cask coderabbit` or see https://docs.coderabbit.ai/cli",
-        );
-      }
-    } else if (process.platform === "linux") {
-      ok = installCodeRabbitFromScript();
-      if (!ok) {
-        log("CodeRabbit CLI: see https://docs.coderabbit.ai/cli");
-      }
-    } else if (process.platform === "win32") {
-      log(
-        "CodeRabbit CLI is officially supported on Windows via WSL; see https://docs.coderabbit.ai/cli/wsl-windows",
-      );
-    }
-    if (ok) {
-      logCodeRabbitAuthHint("CodeRabbit CLI installed");
-    }
+function trySetupGitHooks() {
+  if (isCi || process.env.SKIP_GIT_HOOKS_SETUP === "1") {
+    return;
   }
-} else {
-  log("Skipping CodeRabbit CLI (SKIP_CODERABBIT_CLI=1).");
+  const gitMeta = join(root, ".git");
+  const prePush = join(root, ".githooks", "pre-push");
+  if (!existsSync(gitMeta) || !existsSync(prePush)) {
+    return;
+  }
+  if (!hasCmd("git")) {
+    log(
+      "Git hooks: `git` not found; run `bun run setup:git-hooks` after installing Git.",
+    );
+    return;
+  }
+  const current = spawnSync("git", ["config", "--get", "core.hooksPath"], {
+    cwd: root,
+    encoding: "utf-8",
+  });
+  const configured = (current.stdout ?? "").trim();
+  if (configured === ".githooks") {
+    log("Git hooksPath already set to `.githooks`.");
+    return;
+  }
+  if (configured !== "") {
+    log(
+      `Git hooksPath is already "${configured}"; not changing. To use this repo’s hooks: git config core.hooksPath .githooks`,
+    );
+    return;
+  }
+  log("Setting Git core.hooksPath to `.githooks` (pre-push runs verify:push)…");
+  const set = spawnSync("git", ["config", "core.hooksPath", ".githooks"], {
+    cwd: root,
+    stdio: "inherit",
+  });
+  if (set.status !== 0) {
+    log("Could not set core.hooksPath; run manually: bun run setup:git-hooks");
+  }
 }
 
-if (!process.env.SKIP_FNM_CLI) {
-  if (hasCmd("fnm")) {
-    log("fnm already on PATH.");
-  } else {
-    let ok = false;
-    if (process.platform === "darwin") {
-      ok = brewInstall("fnm", "fnm");
-      if (!ok) {
+if (skipOptionalClis) {
+  log("Skipping optional global CLIs (CI or SKIP_OPTIONAL_CLIS=1).");
+} else {
+  log(
+    "Project CLIs: use `bunx vercel`, `bunx astro`, `bunx eslint`, etc. (from devDependencies).",
+  );
+
+  if (!process.env.SKIP_CODERABBIT_CLI) {
+    if (hasCmd("cr") || hasCmd("coderabbit")) {
+      const cmd = hasCmd("coderabbit") ? "coderabbit" : "cr";
+      log(`CodeRabbit CLI already on PATH (use \`${cmd}\`).`);
+    } else {
+      let ok = false;
+      if (process.platform === "darwin") {
+        ok = brewInstallCask("coderabbit", "CodeRabbit CLI");
+        if (!ok) {
+          log(
+            "CodeRabbit CLI: run `brew install --cask coderabbit` or see https://docs.coderabbit.ai/cli",
+          );
+        }
+      } else if (process.platform === "linux") {
+        ok = installCodeRabbitFromScript();
+        if (!ok) {
+          log("CodeRabbit CLI: see https://docs.coderabbit.ai/cli");
+        }
+      } else if (process.platform === "win32") {
         log(
-          "fnm: run `brew install fnm` or see https://github.com/Schniz/fnm#installation",
+          "CodeRabbit CLI is officially supported on Windows via WSL; see https://docs.coderabbit.ai/cli/wsl-windows",
         );
       }
-    } else if (process.platform === "linux") {
-      ok = installFnmFromScript();
-      if (!ok) {
-        log("fnm: see https://github.com/Schniz/fnm#installation");
-      }
-    } else if (process.platform === "win32") {
-      ok = installFnmWindows();
-      if (!ok) {
-        log("fnm: see https://github.com/Schniz/fnm#installation");
+      if (ok) {
+        logCodeRabbitAuthHint("CodeRabbit CLI installed");
       }
     }
-    if (ok && hasCmd("fnm")) {
-      log(
-        "fnm installed. Ensure your shell loads fnm (see fnm docs for `fnm env`).",
-      );
-    }
+  } else {
+    log("Skipping CodeRabbit CLI (SKIP_CODERABBIT_CLI=1).");
   }
-  tryFnmSyncNode();
-} else {
-  log("Skipping fnm (SKIP_FNM_CLI=1).");
+
+  if (!process.env.SKIP_FNM_CLI) {
+    if (hasCmd("fnm")) {
+      log("fnm already on PATH.");
+    } else {
+      let ok = false;
+      if (process.platform === "darwin") {
+        ok = brewInstall("fnm", "fnm");
+        if (!ok) {
+          log(
+            "fnm: run `brew install fnm` or see https://github.com/Schniz/fnm#installation",
+          );
+        }
+      } else if (process.platform === "linux") {
+        ok = installFnmFromScript();
+        if (!ok) {
+          log("fnm: see https://github.com/Schniz/fnm#installation");
+        }
+      } else if (process.platform === "win32") {
+        ok = installFnmWindows();
+        if (!ok) {
+          log("fnm: see https://github.com/Schniz/fnm#installation");
+        }
+      }
+      if (ok && hasCmd("fnm")) {
+        log(
+          "fnm installed. Ensure your shell loads fnm (see fnm docs for `fnm env`).",
+        );
+      }
+    }
+    tryFnmSyncNode();
+  } else {
+    log("Skipping fnm (SKIP_FNM_CLI=1).");
+  }
 }
+
+trySetupGitHooks();
 
 process.exit(0);
