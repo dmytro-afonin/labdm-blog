@@ -32,13 +32,13 @@
     "vercel": "^50.35.0"
   },
   "dependencies": {
-    "@astrojs/vercel": "^10.0.2",
-    "astro": "^6.0.8"
+    "@astrojs/vercel": "10.0.4",
+    "astro": "6.1.4"
   },
   "smoke": {
     "expectedSnippets": [
       "<title>Dmytro Afonin — labdm blog</title>",
-      "Astro + Bun + Vercel"
+      "Latest posts"
     ]
   }
 }
