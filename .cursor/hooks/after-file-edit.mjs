@@ -59,9 +59,11 @@ const ESLINT_EXT = new Set([
   ".js",
   ".mjs",
   ".cjs",
+  ".jsx",
   ".ts",
   ".mts",
   ".cts",
+  ".tsx",
   ".astro",
 ]);
 

@@ -6,6 +6,7 @@ import {
   formatPostDate,
   getPostUrl,
   getReadingTimeLabel,
+  getTagUrl,
   getVisiblePosts,
   type BlogPost,
 } from "../../utils/posts";
@@ -80,7 +81,9 @@ const readingTimeLabel = getReadingTimeLabel(post);
           post.data.tags.length > 0 && (
             <ul class="tag-list" aria-label="Post tags">
               {post.data.tags.map((tag) => (
-                <li>{tag}</li>
+                <li>
+                  <a href={getTagUrl(tag)}>{tag}</a>
+                </li>
               ))}
             </ul>
           )
@@ -166,6 +169,16 @@ const readingTimeLabel = getReadingTimeLabel(post);
     line-height: 1.7;
   }
 
+  .prose {
+    color: var(--text);
+    font-size: 1.05rem;
+    line-height: 1.85;
+  }
+
+  .prose a {
+    color: var(--accent);
+  }
+
   .tag-list {
     display: flex;
     flex-wrap: wrap;
@@ -176,20 +189,21 @@ const readingTimeLabel = getReadingTimeLabel(post);
   }
 
   .tag-list li {
+    display: flex;
+  }
+
+  .tag-list a {
     padding: 0.35rem 0.8rem;
     border: 1px solid rgb(56 189 248 / 35%);
     border-radius: 999px;
     color: var(--accent);
+    text-decoration: none;
   }
 
-  .prose {
-    color: var(--text);
-    font-size: 1.05rem;
-    line-height: 1.85;
-  }
-
-  .prose a {
-    color: var(--accent);
+  .tag-list a:hover,
+  .tag-list a:focus-visible {
+    border-color: rgb(56 189 248 / 55%);
+    background: rgb(56 189 248 / 10%);
   }
 
   .prose p,

@@ -19,6 +19,33 @@ export function getPostUrl(post: Pick<BlogPost, "id">) {
   return `/posts/${post.id}/`;
 }
 
+export function slugifyTag(tag: string) {
+  const slug = tag
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug === "" ? "tag" : slug;
+}
+
+export function getTagUrl(tag: string) {
+  return `/tags/${slugifyTag(tag)}/`;
+}
+
+export function getAllTagSlugsFromPosts(posts: BlogPost[]) {
+  return [...new Set(posts.flatMap((post) => post.data.tags.map(slugifyTag)))];
+}
+
+export function getPostsForTagSlug(posts: BlogPost[], slug: string) {
+  return posts.filter((post) =>
+    post.data.tags.some((tag) => slugifyTag(tag) === slug),
+  );
+}
+
 export function formatPostDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
     dateStyle: "long",

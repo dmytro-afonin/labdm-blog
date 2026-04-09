@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const root = resolve(scriptDir, "../..");
 
+// Drain stdin so the hook process does not block waiting on a pipe; the payload
+// from Cursor is not used here — `await Bun.stdin.text()` intentionally discards it.
 await Bun.stdin.text();
 
 const result = spawnSync("bun", ["run", "verify"], {
