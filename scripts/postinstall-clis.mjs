@@ -202,7 +202,7 @@ if (skipOptionalClis) {
     "Project CLIs: use `bunx vercel`, `bunx astro`, `bunx eslint`, etc. (from devDependencies).",
   );
 
-  if (!process.env.SKIP_CODERABBIT_CLI) {
+  if (process.env.SKIP_CODERABBIT_CLI !== "1") {
     if (hasCmd("cr") || hasCmd("coderabbit")) {
       const cmd = hasCmd("coderabbit") ? "coderabbit" : "cr";
       log(`CodeRabbit CLI already on PATH (use \`${cmd}\`).`);
@@ -233,7 +233,7 @@ if (skipOptionalClis) {
     log("Skipping CodeRabbit CLI (SKIP_CODERABBIT_CLI=1).");
   }
 
-  if (!process.env.SKIP_FNM_CLI) {
+  if (process.env.SKIP_FNM_CLI !== "1") {
     if (hasCmd("fnm")) {
       log("fnm already on PATH.");
     } else {
