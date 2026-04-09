@@ -1,7 +1,7 @@
 /**
  * Optional global CLI setup after `bun install` / `npm install`.
  *
- * Skips entirely when CI=true or SKIP_OPTIONAL_CLIS=1.
+ * Skips entirely when CI is set (e.g. CI=true or CI=1) or SKIP_OPTIONAL_CLIS=1.
  *
  * Installs (unless already on PATH):
  * - CodeRabbit CLI (`coderabbit`; Homebrew does not add `cr`) — unless SKIP_CODERABBIT_CLI=1
@@ -28,7 +28,10 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const log = (msg) => console.log(`[postinstall-clis] ${msg}`);
 
-const isCi = process.env.CI === "true";
+const isCi =
+  process.env.CI === "true" ||
+  process.env.CI === "1" ||
+  process.env.CI === "True";
 const skipOptionalClis = isCi || process.env.SKIP_OPTIONAL_CLIS === "1";
 
 function hasCmd(name) {

@@ -81,6 +81,7 @@ const pageDescription = `Browse ${posts.length} published ${posts.length === 1 ?
         {
           posts.map((post) => {
             const href = getPostUrl(post);
+            const tags = post.data.tags ?? [];
 
             return (
               <li>
@@ -98,12 +99,12 @@ const pageDescription = `Browse ${posts.length} published ${posts.length === 1 ?
 
                   <p>{post.data.excerpt ?? post.data.description}</p>
 
-                  {post.data.tags.length > 0 && (
+                  {tags.length > 0 && (
                     <ul
                       class="tag-list"
                       aria-label={`Tags for ${post.data.title}`}
                     >
-                      {post.data.tags.map((tag) => (
+                      {tags.map((tag) => (
                         <li>
                           <a href={getTagUrl(tag)}>{tag}</a>
                         </li>

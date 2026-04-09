@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/cursor-hooks@latest/schema/hooks.schema.json",
+  "$schema": "https://unpkg.com/cursor-hooks@1.1.6/schema/hooks.schema.json",
   "version": 1,
   "hooks": {
     "afterFileEdit": [
