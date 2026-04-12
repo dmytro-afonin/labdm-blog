@@ -2,5 +2,5 @@
 
 interface ImportMetaEnv {
   /** Neon connection string (server-only). */
-  readonly DATABASE_URL?: string;
+  readonly POSTGRES_URL?: string;
 }

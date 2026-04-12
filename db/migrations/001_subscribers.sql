@@ -1,7 +1,9 @@
 -- Run against your Neon database (e.g. `neon sql < db/migrations/001_subscribers.sql` or Neon SQL Editor).
+CREATE EXTENSION IF NOT EXISTS citext;
+
 CREATE TABLE IF NOT EXISTS subscribers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT NOT NULL UNIQUE,
+  email CITEXT NOT NULL UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   consent BOOLEAN NOT NULL DEFAULT true
 );
