@@ -7,7 +7,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const POST: APIRoute = async ({ request, redirect }) => {
   if (!isDatabaseConfigured()) {
-    return new Response("Database not configured", { status: 503 });
+    return redirect("/newsletter/error");
   }
 
   const contentType = request.headers.get("content-type") ?? "";
