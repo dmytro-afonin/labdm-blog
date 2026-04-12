@@ -1,0 +1,42 @@
+---
+import PostCardViewIcon from "./PostCardViewIcon.astro";
+import PostDateRead from "./PostDateRead.astro";
+import PostTags from "./PostTags.astro";
+import { getPostUrl, previewBlurb, type BlogPost } from "../utils/posts";
+
+interface Props {
+  post: BlogPost;
+  url?: string;
+  excerpt?: string;
+}
+
+const { post, url: urlProp, excerpt: excerptProp } = Astro.props;
+const href = urlProp ?? getPostUrl(post);
+const blurb = excerptProp ?? previewBlurb(post);
+const isDraft = post.data.draft;
+const tags = post.data.tags ?? [];
+---
+
+<li>
+  <article class="post-card">
+    <h3 class="post-card__title">
+      <a href={href}>{post.data.title}</a>
+    </h3>
+    <p class="post-card__excerpt">{blurb}</p>
+    <PostTags tags={tags} ariaLabel={`Tags for ${post.data.title}`} />
+    <footer class="post-card__bar">
+      <div class="post-card__actions">
+        <a
+          class="post-card__view"
+          href={href}
+          aria-label={`Read more: ${post.data.title}`}
+        >
+          Read more
+          <PostCardViewIcon />
+        </a>
+        {isDraft && <span class="post-card__draft">Draft</span>}
+      </div>
+      <PostDateRead post={post} />
+    </footer>
+  </article>
+</li>

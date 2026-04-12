@@ -1,0 +1,65 @@
+---
+import SocialIcon from "./SocialIcon.astro";
+import { getSocialLinkItems } from "../config/site";
+
+const items = getSocialLinkItems();
+---
+
+<nav class="site-social" aria-label="Social profiles">
+  <ul class="site-social__list">
+    {
+      items.map((item) => (
+        <li class="site-social__li">
+          <a
+            class:list={["site-social__a", `site-social__a--${item.key}`]}
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={item.label}
+          >
+            <SocialIcon network={item.key} />
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style is:global>
+  .site-social__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0.35rem;
+  }
+
+  .site-social .site-social__a {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--mast-tool-height);
+    height: var(--mast-tool-height);
+    border-radius: var(--mast-tool-radius);
+    color: var(--social-accent);
+    text-decoration: none;
+    border: 1px solid var(--social-line);
+    background: var(--social-surface);
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .site-social .site-social__a:hover {
+    color: var(--social-hover-fg);
+    border-color: var(--social-hover-line);
+  }
+
+  .site-social .social-icon {
+    display: block;
+  }
+</style>

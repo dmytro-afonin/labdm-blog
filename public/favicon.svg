@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Foreground only: page bg is applied in CSS (.site-mast__logo-wrap) so it matches body exactly. -->
+<!-- Accents: palette accent-mustard, additional-red, accent-soft, theme-green -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="10 10 44 44" role="img" aria-label="labdm badge">
+  <title>labdm badge</title>
+  <defs>
+    <clipPath id="badge-clip">
+      <circle cx="32" cy="32" r="22"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#badge-clip)">
+    <rect x="10" y="10" width="22" height="44" fill="#c9a86a"/>
+    <rect x="32" y="10" width="22" height="44" fill="#a6756a"/>
+  </g>
+  <circle cx="32" cy="32" r="7" fill="#e8d8b8"/>
+  <circle cx="32" cy="32" r="3" fill="#353a34"/>
+</svg>

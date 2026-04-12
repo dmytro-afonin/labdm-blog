@@ -1,5 +1,7 @@
 import { siteConfig } from "../config/site";
 
+export const prerender = true;
+
 function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")

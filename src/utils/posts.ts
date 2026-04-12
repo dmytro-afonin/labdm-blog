@@ -89,6 +89,26 @@ export function getReadingTimeLabel(post: Pick<BlogPost, "body">) {
   return formatReadingTime(getReadingTimeMinutes(post));
 }
 
+/** Short date for quiet index lines (UTC). */
+export function formatPostDateQuiet(date: Date) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+/** Richer index preview: excerpt + description when both exist and differ. */
+export function previewBlurb(post: BlogPost) {
+  const ex = post.data.excerpt?.trim();
+  const de = post.data.description?.trim();
+  if (ex && de && ex !== de) {
+    return `${ex} — ${de}`;
+  }
+  return ex || de || "";
+}
+
 export async function getVisiblePosts() {
   const posts = await getCollection("posts", isVisiblePost);
 

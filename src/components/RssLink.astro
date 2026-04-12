@@ -1,0 +1,16 @@
+---
+import MastRssIcon from "./MastRssIcon.astro";
+import { absoluteUrl } from "../config/site";
+
+interface Props {
+  path: string;
+  type: string;
+}
+
+const { path, type } = Astro.props;
+---
+
+<a class="site-mast__rss" href={absoluteUrl(path)} type={type}>
+  <MastRssIcon />
+  RSS
+</a>
