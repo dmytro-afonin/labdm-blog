@@ -3,8 +3,6 @@ import { getPostUrl, getVisiblePosts } from "../utils/posts";
 
 export const prerender = true;
 
-export const prerender = true;
-
 function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")
