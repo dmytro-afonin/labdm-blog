@@ -1,14 +1,13 @@
 ---
+import { randomUUID } from "node:crypto";
 import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
+
+const labelId = `theme-switcher-label-${randomUUID()}`;
 ---
 
 <div class="theme-switcher" data-theme-switcher>
-  <span class="theme-switcher__label" id="theme-switcher-label">Theme</span>
-  <div
-    class="theme-switcher__group"
-    role="group"
-    aria-labelledby="theme-switcher-label"
-  >
+  <span class="theme-switcher__label" id={labelId}>Theme</span>
+  <div class="theme-switcher__group" role="group" aria-labelledby={labelId}>
     {
       (
         [
@@ -84,7 +83,7 @@ import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
           }
           document.documentElement.dataset.colorScheme = v;
           applyMeta(v);
-          syncGroup(root);
+          document.querySelectorAll("[data-theme-switcher]").forEach(syncGroup);
           document.dispatchEvent(
             new CustomEvent("labdm:color-scheme", {
               detail: { preference: v, effective: effectiveScheme(v) },

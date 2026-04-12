@@ -1,0 +1,123 @@
+---
+/**
+ * Newsletter signup: POST to /api/subscribe (Neon `subscribers` table).
+ */
+---
+
+<form
+  class="subscribe-form"
+  method="post"
+  action="/api/subscribe"
+  aria-label="Subscribe to email updates"
+>
+  <div class="subscribe-form__combo">
+    <label class="visually-hidden" for="subscribe-email">Email address</label>
+    <input
+      class="subscribe-form__input"
+      id="subscribe-email"
+      name="email"
+      type="email"
+      autocomplete="email"
+      placeholder="Type your email…"
+      required
+    />
+    <span class="subscribe-form__divider" aria-hidden="true"></span>
+    <button class="subscribe-form__submit" type="submit">Subscribe</button>
+  </div>
+  <input
+    class="subscribe-form__hp"
+    type="text"
+    name="company"
+    tabindex="-1"
+    autocomplete="off"
+    aria-hidden="true"
+  />
+</form>
+
+<style>
+  .subscribe-form {
+    position: relative;
+    margin: 0;
+    min-width: min(100%, 18rem);
+    flex: 0 1 auto;
+    max-width: 22rem;
+    width: 100%;
+  }
+
+  .subscribe-form__combo {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: var(--mast-tool-height);
+    border-radius: 999px;
+    border: 1px solid var(--subscribe-border);
+    background: var(--subscribe-input-bg);
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+  }
+
+  .subscribe-form__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 0.35rem 0.85rem 0.35rem 1rem;
+    font: inherit;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    outline: none;
+  }
+
+  .subscribe-form__input::placeholder {
+    color: var(--text-meta);
+    opacity: 1;
+  }
+
+  .subscribe-form__divider {
+    width: 1px;
+    flex-shrink: 0;
+    align-self: stretch;
+    background: var(--subscribe-divider);
+  }
+
+  .subscribe-form__submit {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0.35rem 1rem 0.35rem 0.85rem;
+    border: none;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--subscribe-btn-fg);
+    background: var(--subscribe-btn-bg);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .subscribe-form__submit:hover {
+    color: var(--subscribe-btn-fg-hover);
+    background: var(--subscribe-btn-bg-hover);
+  }
+
+  .subscribe-form__submit:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    z-index: 1;
+  }
+
+  .subscribe-form__hp {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>

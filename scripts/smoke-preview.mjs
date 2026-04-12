@@ -1,7 +1,6 @@
-import { spawn } from "node:child_process";
-import { once } from "node:events";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { createServer } from "node:http";
+import { readFileSync, existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 
@@ -9,46 +8,69 @@ const host = "127.0.0.1";
 const port = 4321;
 const previewUrl = `http://${host}:${port}/`;
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
-const distIndexPath = resolve(scriptDirectory, "../dist/index.html");
-const astroExecutable = resolve(
-  scriptDirectory,
-  process.platform === "win32"
-    ? "../node_modules/.bin/astro.cmd"
-    : "../node_modules/.bin/astro",
-);
+
+/** Prefer root `dist/`, then Vercel-style `dist/client/`, then copied static output. */
+const indexCandidates = [
+  resolve(scriptDirectory, "../dist/index.html"),
+  resolve(scriptDirectory, "../dist/client/index.html"),
+  resolve(scriptDirectory, "../.vercel/output/static/index.html"),
+];
+
+const distIndexPath = indexCandidates.find((p) => existsSync(p));
 
 const packageJsonPath = resolve(scriptDirectory, "../package.json");
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
 const expectedSnippets = packageJson.smoke?.expectedSnippets ?? [];
 
-if (!existsSync(distIndexPath)) {
+if (!distIndexPath) {
   throw new Error(
     "Build output is missing. Run `bun run build` before `bun run smoke`.",
   );
 }
 
-const previewProcess = spawn(
-  astroExecutable,
-  ["preview", "--host", host, "--port", String(port)],
-  {
-    env: {
-      ...process.env,
-      ASTRO_TELEMETRY_DISABLED: "1",
-    },
-    stdio: ["ignore", "pipe", "pipe"],
-  },
-);
+const staticRoot = dirname(distIndexPath);
 
-previewProcess.stdout.on("data", (chunk) => {
-  process.stdout.write(chunk);
-});
+/**
+ * Serves the built `index.html` for GET `/` only.
+ *
+ * `astro preview` uses Vite with `build.outDir` = project `outDir` (`dist/`). The Vercel
+ * adapter writes prerendered HTML under `dist/client/`, so `/` is 404 in preview even when
+ * the site builds successfully. CI smoke instead checks the same files Vercel deploys.
+ */
+function createSmokeServer() {
+  const indexPath = join(staticRoot, "index.html");
+  return createServer((req, res) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      res.writeHead(405);
+      res.end();
+      return;
+    }
+    const url = new URL(req.url ?? "/", previewUrl);
+    if (url.pathname !== "/") {
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+    const body = readFileSync(indexPath);
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Content-Length": String(body.length),
+    });
+    if (req.method === "HEAD") {
+      res.end();
+    } else {
+      res.end(body);
+    }
+  });
+}
 
-previewProcess.stderr.on("data", (chunk) => {
-  process.stderr.write(chunk);
-});
+const server = createSmokeServer();
 
-previewProcess.on("error", (error) => {
-  console.error("Failed to start Astro preview:", error);
+server.listen(port, host, (err) => {
+  if (err) {
+    console.error("Failed to bind smoke server:", err);
+    process.exitCode = 1;
+  }
 });
 
 async function waitForPreview() {
@@ -71,22 +93,10 @@ async function waitForPreview() {
   throw new Error(`Preview server did not become ready at ${previewUrl}.`);
 }
 
-async function stopPreview() {
-  if (previewProcess.exitCode !== null) {
-    return;
-  }
-
-  previewProcess.kill("SIGTERM");
-
-  const result = await Promise.race([
-    once(previewProcess, "exit").then(() => "exited"),
-    delay(5_000, "timeout"),
-  ]);
-
-  if (result === "timeout" && previewProcess.exitCode === null) {
-    previewProcess.kill("SIGKILL");
-    await once(previewProcess, "exit");
-  }
+async function stopServer() {
+  await new Promise((resolve) => {
+    server.close(() => resolve());
+  });
 }
 
 try {
@@ -112,5 +122,5 @@ try {
 
   console.log(`Smoke check passed for ${previewUrl}`);
 } finally {
-  await stopPreview();
+  await stopServer();
 }

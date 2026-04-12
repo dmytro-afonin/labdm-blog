@@ -2,6 +2,16 @@ import { palette } from "./palette";
 
 export type SocialNetwork = "linkedin" | "x" | "github";
 
+/** Canonical order + labels for {@link siteConfig.socialLinks} keys. */
+export const socialNetworkMeta: ReadonlyArray<{
+  key: SocialNetwork;
+  label: string;
+}> = [
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "x", label: "X (Twitter)" },
+  { key: "github", label: "GitHub" },
+];
+
 export const siteConfig = {
   name: "Dmytro Afonin - labdm blog",
   /** Masthead: uppercase name row + tagline (Olive layout). */
@@ -47,20 +57,18 @@ export function getSocialLinkItems(): Array<{
 }> {
   const s = siteConfig.socialLinks;
   const out: Array<{ key: SocialNetwork; href: string; label: string }> = [];
-  const li = s.linkedin.trim();
-  const x = s.x.trim();
-  const gh = s.github.trim();
-  if (li) out.push({ key: "linkedin", href: li, label: "LinkedIn" });
-  if (x) out.push({ key: "x", href: x, label: "X (Twitter)" });
-  if (gh) out.push({ key: "github", href: gh, label: "GitHub" });
+  for (const { key, label } of socialNetworkMeta) {
+    const href = s[key].trim();
+    if (href) out.push({ key, href, label });
+  }
   return out;
 }
 
 /** Uses the same `socialLinks` keys as {@link getSocialLinkItems} without building the full list. */
 export function hasSocialLinks(): boolean {
   const s = siteConfig.socialLinks;
-  for (const url of [s.linkedin, s.x, s.github]) {
-    if (url.trim()) return true;
+  for (const { key } of socialNetworkMeta) {
+    if (s[key].trim()) return true;
   }
   return false;
 }

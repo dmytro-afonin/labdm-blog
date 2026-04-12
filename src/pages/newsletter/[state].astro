@@ -1,0 +1,84 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export function getStaticPaths() {
+  return [
+    {
+      params: { state: "thanks" },
+      props: {
+        title: "Subscribed",
+        message:
+          "Thanks — you're on the list. New posts will land in your inbox when they're published.",
+      },
+    },
+    {
+      params: { state: "already" },
+      props: {
+        title: "Already subscribed",
+        message: "That email is already registered. No need to sign up again.",
+      },
+    },
+    {
+      params: { state: "invalid" },
+      props: {
+        title: "Check your email",
+        message:
+          "That address doesn't look valid. Go back and try again with a full email.",
+      },
+    },
+    {
+      params: { state: "error" },
+      props: {
+        title: "Something went wrong",
+        message:
+          "We couldn't save your subscription right now. Please try again in a moment.",
+      },
+    },
+  ];
+}
+
+interface Props {
+  title: string;
+  message: string;
+}
+
+const { title, message } = Astro.props;
+---
+
+<BaseLayout title={title} canonicalPath={`/newsletter/${Astro.params.state}`}>
+  <main class="newsletter-state">
+    <h1>{title}</h1>
+    <p>{message}</p>
+    <p><a href="/">← Back to the blog</a></p>
+  </main>
+</BaseLayout>
+
+<style>
+  .newsletter-state {
+    width: min(56rem, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2rem 0 6rem;
+  }
+
+  .newsletter-state h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(1.35rem, 3vw, 1.75rem);
+  }
+
+  .newsletter-state p {
+    margin: 0 0 1rem;
+    color: var(--body-copy);
+    line-height: 1.65;
+    max-width: 36rem;
+  }
+
+  .newsletter-state a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .newsletter-state a:hover {
+    color: var(--accent-soft);
+  }
+</style>

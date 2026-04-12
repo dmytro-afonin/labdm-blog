@@ -1,6 +1,7 @@
 ---
 import RssLink from "../components/RssLink.astro";
 import SocialLinks from "../components/SocialLinks.astro";
+import SubscribeForm from "../components/SubscribeForm.astro";
 import ThemeSwitcher from "../components/ThemeSwitcher.astro";
 import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
 import {
@@ -183,6 +184,14 @@ const showSocial = hasSocialLinks();
         --rss-bg: rgb(0 0 0 / 15%);
         --rss-hover-border: rgb(201 168 106 / 25%);
 
+        --subscribe-border: rgb(255 255 255 / 10%);
+        --subscribe-input-bg: rgb(0 0 0 / 16%);
+        --subscribe-divider: rgb(255 255 255 / 11%);
+        --subscribe-btn-bg: var(--panel-b);
+        --subscribe-btn-bg-hover: var(--panel-a);
+        --subscribe-btn-fg: rgb(198 195 188 / 92%);
+        --subscribe-btn-fg-hover: var(--color-accent);
+
         --post-card-a: #3e443e;
         --post-card-b: #363b36;
 
@@ -296,6 +305,14 @@ const showSocial = hasSocialLinks();
           --rss-border: rgb(0 0 0 / 10%);
           --rss-bg: rgb(255 255 255 / 72%);
           --rss-hover-border: rgb(140 110 50 / 35%);
+
+          --subscribe-border: rgb(0 0 0 / 11%);
+          --subscribe-input-bg: rgb(255 255 255 / 55%);
+          --subscribe-divider: rgb(0 0 0 / 9%);
+          --subscribe-btn-bg: #e8e4dc;
+          --subscribe-btn-bg-hover: #ddd9d0;
+          --subscribe-btn-fg: rgb(72 76 70 / 92%);
+          --subscribe-btn-fg-hover: #4a3a12;
 
           --post-card-a: #fefdfa;
           --post-card-b: #f3efe6;
@@ -411,6 +428,14 @@ const showSocial = hasSocialLinks();
         --rss-border: rgb(0 0 0 / 10%);
         --rss-bg: rgb(255 255 255 / 72%);
         --rss-hover-border: rgb(140 110 50 / 35%);
+
+        --subscribe-border: rgb(0 0 0 / 11%);
+        --subscribe-input-bg: rgb(255 255 255 / 55%);
+        --subscribe-divider: rgb(0 0 0 / 9%);
+        --subscribe-btn-bg: #e8e4dc;
+        --subscribe-btn-bg-hover: #ddd9d0;
+        --subscribe-btn-fg: rgb(72 76 70 / 92%);
+        --subscribe-btn-fg-hover: #4a3a12;
 
         --post-card-a: #fefdfa;
         --post-card-b: #f3efe6;
@@ -537,10 +562,23 @@ const showSocial = hasSocialLinks();
         margin: 0 auto;
         padding: 1.75rem 0 0;
         display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+      }
+
+      .site-mast__top {
+        display: flex;
         flex-wrap: wrap;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 1rem;
+        gap: 1rem 1.25rem;
+        width: 100%;
+      }
+
+      .site-mast__column {
+        flex: 1 1 min(0, 100%);
+        min-width: 0;
       }
 
       .site-mast__brand {
@@ -550,6 +588,34 @@ const showSocial = hasSocialLinks();
         text-decoration: none;
         color: inherit;
         min-width: 0;
+        align-self: flex-start;
+      }
+
+      .site-mast__subscribe-wrap {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding-top: 0.35rem;
+      }
+
+      .site-mast__subscribe-rss {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        width: 100%;
+        max-width: min(36rem, 100%);
+      }
+
+      .site-mast__subscribe-rss .subscribe-form {
+        flex: 0 1 22rem;
+        max-width: 22rem;
+        width: min(100%, 22rem);
+      }
+
+      .site-mast__subscribe-rss > .site-mast__rss {
+        flex: 0 0 auto;
       }
 
       .site-mast__logo-wrap {
@@ -651,17 +717,18 @@ const showSocial = hasSocialLinks();
 
       .site-mast__tools {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-end;
+        flex-direction: column;
+        align-items: flex-end;
         gap: 0.45rem;
+        flex-shrink: 0;
       }
 
-      .site-mast__tools > .theme-switcher,
-      .site-mast__tools > .site-social,
-      .site-mast__tools > .site-mast__rss {
+      .site-mast__tools .theme-switcher {
         flex: 0 0 auto;
-        align-self: center;
+      }
+
+      .site-mast__tools .site-social {
+        flex: 0 0 auto;
       }
 
       /* —— Index / tag post cards (Olive) —— */
@@ -843,26 +910,35 @@ const showSocial = hasSocialLinks();
   <body>
     <header>
       <div class="site-mast">
-        <a class="site-mast__brand" href="/">
-          <span class="site-mast__logo-wrap">
-            <img
-              class="site-mast__logo"
-              src="/favicon.svg"
-              alt=""
-              width="76"
-              height="76"
-              decoding="async"
-            />
-          </span>
-          <div class="site-mast__text">
-            <p class="site-mast__name">{siteConfig.mastName}</p>
-            <p class="site-mast__desc">{siteConfig.mastTagline}</p>
+        <div class="site-mast__top">
+          <div class="site-mast__column">
+            <a class="site-mast__brand" href="/">
+              <span class="site-mast__logo-wrap">
+                <img
+                  class="site-mast__logo"
+                  src="/favicon.svg"
+                  alt=""
+                  width="76"
+                  height="76"
+                  decoding="async"
+                />
+              </span>
+              <div class="site-mast__text">
+                <p class="site-mast__name">{siteConfig.mastName}</p>
+                <p class="site-mast__desc">{siteConfig.mastTagline}</p>
+              </div>
+            </a>
           </div>
-        </a>
-        <div class="site-mast__tools">
-          <ThemeSwitcher />
-          {showSocial && <SocialLinks />}
-          {rssFeed && <RssLink path={rssFeed.path} type={rssFeed.type} />}
+          <div class="site-mast__tools">
+            <ThemeSwitcher />
+            {showSocial && <SocialLinks />}
+          </div>
+        </div>
+        <div class="site-mast__subscribe-wrap">
+          <div class="site-mast__subscribe-rss">
+            <SubscribeForm />
+            {rssFeed && <RssLink path={rssFeed.path} type={rssFeed.type} />}
+          </div>
         </div>
       </div>
     </header>
