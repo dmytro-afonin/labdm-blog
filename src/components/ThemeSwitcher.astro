@@ -51,6 +51,14 @@ const labelId = `theme-switcher-label-${randomUUID()}`;
         : "light";
     }
 
+    function applyDataColorScheme(pref) {
+      if (pref === "light" || pref === "dark") {
+        document.documentElement.setAttribute("data-color-scheme", pref);
+      } else {
+        document.documentElement.removeAttribute("data-color-scheme");
+      }
+    }
+
     function applyMeta(pref) {
       const meta = document.querySelector('meta[name="theme-color"]');
       if (!meta) return;
@@ -81,9 +89,7 @@ const labelId = `theme-switcher-label-${randomUUID()}`;
           } catch {
             /* ignore */
           }
-          document.documentElement.dataset.colorScheme = v;
-          document.documentElement.dataset.colorSchemeEffective =
-            effectiveScheme(v);
+          applyDataColorScheme(v);
           applyMeta(v);
           document.querySelectorAll("[data-theme-switcher]").forEach(syncGroup);
           document.dispatchEvent(
@@ -104,10 +110,7 @@ const labelId = `theme-switcher-label-${randomUUID()}`;
       ) {
         return;
       }
-      document.documentElement.dataset.colorScheme = e.newValue;
-      document.documentElement.dataset.colorSchemeEffective = effectiveScheme(
-        e.newValue,
-      );
+      applyDataColorScheme(e.newValue);
       applyMeta(e.newValue);
       document.querySelectorAll("[data-theme-switcher]").forEach(syncGroup);
     });
@@ -115,8 +118,6 @@ const labelId = `theme-switcher-label-${randomUUID()}`;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener("change", function () {
       if (readPreference() !== "system") return;
-      document.documentElement.dataset.colorSchemeEffective =
-        effectiveScheme("system");
       applyMeta("system");
       document.dispatchEvent(
         new CustomEvent("labdm:color-scheme", {

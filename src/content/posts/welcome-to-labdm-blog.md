@@ -4,9 +4,6 @@ description: "I never thought this day would come. I never wanted to be a public
 pubDate: 2026-03-22
 excerpt: "Welcome to my blog!"
 draft: false
-tags:
-  - meta
-  - astro
 ---
 
 ## Let me introduce myself first

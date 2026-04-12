@@ -1,9 +1,7 @@
 ---
-import PostCardViewIcon from "../components/PostCardViewIcon.astro";
-import PostDateRead from "../components/PostDateRead.astro";
-import PostTags from "../components/PostTags.astro";
+import PostCard from "../components/PostCard.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { getPostUrl, getVisiblePosts, previewBlurb } from "../utils/posts";
+import { getVisiblePosts } from "../utils/posts";
 
 const posts = await getVisiblePosts();
 ---
@@ -21,41 +19,9 @@ const posts = await getVisiblePosts();
           </p>
         ) : (
           <ul class="post-feed">
-            {posts.map((post) => {
-              const href = getPostUrl(post);
-              const isDraft = post.data.draft;
-              const tags = post.data.tags ?? [];
-              const blurb = previewBlurb(post);
-
-              return (
-                <li>
-                  <article class="post-card">
-                    <h3 class="post-card__title">
-                      <a href={href}>{post.data.title}</a>
-                    </h3>
-                    <p class="post-card__excerpt">{blurb}</p>
-                    <PostTags
-                      tags={tags}
-                      ariaLabel={`Tags for ${post.data.title}`}
-                    />
-                    <footer class="post-card__bar">
-                      <div class="post-card__actions">
-                        <a
-                          class="post-card__view"
-                          href={href}
-                          aria-label={`Read more: ${post.data.title}`}
-                        >
-                          Read more
-                          <PostCardViewIcon />
-                        </a>
-                        {isDraft && <span class="post-card__draft">Draft</span>}
-                      </div>
-                      <PostDateRead post={post} />
-                    </footer>
-                  </article>
-                </li>
-              );
-            })}
+            {posts.map((post) => (
+              <PostCard post={post} />
+            ))}
           </ul>
         )
       }

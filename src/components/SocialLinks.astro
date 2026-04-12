@@ -5,27 +5,25 @@ import { getSocialLinkItems } from "../config/site";
 const items = getSocialLinkItems();
 ---
 
-{
-  items.length > 0 && (
-    <nav class="site-social" aria-label="Social profiles">
-      <ul class="site-social__list">
-        {items.map((item) => (
-          <li class="site-social__li">
-            <a
-              class:list={["site-social__a", `site-social__a--${item.key}`]}
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={item.label}
-            >
-              <SocialIcon network={item.key} />
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  )
-}
+<nav class="site-social" aria-label="Social profiles">
+  <ul class="site-social__list">
+    {
+      items.map((item) => (
+        <li class="site-social__li">
+          <a
+            class:list={["site-social__a", `site-social__a--${item.key}`]}
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={item.label}
+          >
+            <SocialIcon network={item.key} />
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
 
 <style is:global>
   .site-social__list {

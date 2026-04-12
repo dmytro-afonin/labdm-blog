@@ -1,14 +1,10 @@
 ---
-import PostCardViewIcon from "../../components/PostCardViewIcon.astro";
-import PostDateRead from "../../components/PostDateRead.astro";
-import PostTags from "../../components/PostTags.astro";
+import PostCard from "../../components/PostCard.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import {
   getAllTagSlugsFromPosts,
-  getPostUrl,
   getPostsForTagSlug,
   getVisiblePosts,
-  previewBlurb,
   slugifyTag,
   type BlogPost,
 } from "../../utils/posts";
@@ -75,43 +71,7 @@ const pageDescription = `Browse ${posts.length} published ${posts.length === 1 ?
     <section aria-labelledby="posts-heading">
       <h2 id="posts-heading" class="visually-hidden">Posts</h2>
       <ul class="post-feed">
-        {
-          posts.map((post) => {
-            const href = getPostUrl(post);
-            const tags = post.data.tags ?? [];
-            const blurb = previewBlurb(post);
-            const isDraft = post.data.draft;
-
-            return (
-              <li>
-                <article class="post-card">
-                  <h3 class="post-card__title">
-                    <a href={href}>{post.data.title}</a>
-                  </h3>
-                  <p class="post-card__excerpt">{blurb}</p>
-                  <PostTags
-                    tags={tags}
-                    ariaLabel={`Tags for ${post.data.title}`}
-                  />
-                  <footer class="post-card__bar">
-                    <div class="post-card__actions">
-                      <a
-                        class="post-card__view"
-                        href={href}
-                        aria-label={`Read more: ${post.data.title}`}
-                      >
-                        Read more
-                        <PostCardViewIcon />
-                      </a>
-                      {isDraft && <span class="post-card__draft">Draft</span>}
-                    </div>
-                    <PostDateRead post={post} />
-                  </footer>
-                </article>
-              </li>
-            );
-          })
-        }
+        {posts.map((post) => <PostCard post={post} />)}
       </ul>
     </section>
   </main>

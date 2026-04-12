@@ -34,7 +34,7 @@ export const siteConfig = {
       type: "application/rss+xml",
     },
   ],
-  /** Full URLs (https). Leave blank to hide that network. */
+  /** Full URLs (https). */
   socialLinks: {
     linkedin: "https://www.linkedin.com/in/dmytro-afonin/",
     x: "https://x.com/DAfonin18409",
@@ -55,20 +55,9 @@ export function getSocialLinkItems(): Array<{
   href: string;
   label: string;
 }> {
-  const s = siteConfig.socialLinks;
-  const out: Array<{ key: SocialNetwork; href: string; label: string }> = [];
-  for (const { key, label } of socialNetworkMeta) {
-    const href = s[key].trim();
-    if (href) out.push({ key, href, label });
-  }
-  return out;
-}
-
-/** Uses the same `socialLinks` keys as {@link getSocialLinkItems} without building the full list. */
-export function hasSocialLinks(): boolean {
-  const s = siteConfig.socialLinks;
-  for (const { key } of socialNetworkMeta) {
-    if (s[key].trim()) return true;
-  }
-  return false;
+  return socialNetworkMeta.map(({ key, label }) => ({
+    key,
+    href: siteConfig.socialLinks[key].trim(),
+    label,
+  }));
 }
