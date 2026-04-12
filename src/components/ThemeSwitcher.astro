@@ -1,0 +1,201 @@
+---
+import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
+---
+
+<div class="theme-switcher" data-theme-switcher>
+  <span class="theme-switcher__label" id="theme-switcher-label">Theme</span>
+  <div
+    class="theme-switcher__group"
+    role="group"
+    aria-labelledby="theme-switcher-label"
+  >
+    {
+      (
+        [
+          { value: "light" as const, label: "Light" },
+          { value: "dark" as const, label: "Dark" },
+          { value: "system" as const, label: "System" },
+        ] as const
+      ).map(({ value, label }) => (
+        <button
+          type="button"
+          class="theme-switcher__btn"
+          data-scheme={value}
+          aria-pressed="false"
+          aria-label={`${label} theme`}
+        >
+          {label}
+        </button>
+      ))
+    }
+  </div>
+</div>
+
+<script is:inline define:vars={{ storageKey: COLOR_SCHEME_STORAGE_KEY }}>
+  (function () {
+    const KEY = storageKey;
+
+    function readPreference() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (raw === "light" || raw === "dark" || raw === "system") return raw;
+      } catch {
+        /* ignore */
+      }
+      return "system";
+    }
+
+    function effectiveScheme(pref) {
+      if (pref === "light" || pref === "dark") return pref;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+
+    function applyMeta(pref) {
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) return;
+      meta.setAttribute(
+        "content",
+        effectiveScheme(pref) === "light" ? "#ebe6dc" : "#353a34",
+      );
+    }
+
+    function syncGroup(root) {
+      const pref = readPreference();
+      root.querySelectorAll("[data-scheme]").forEach(function (btn) {
+        const v = btn.getAttribute("data-scheme");
+        const active = v === pref;
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+        btn.classList.toggle("theme-switcher__btn--active", active);
+      });
+    }
+
+    document.querySelectorAll("[data-theme-switcher]").forEach(function (root) {
+      syncGroup(root);
+      root.querySelectorAll("[data-scheme]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const v = btn.getAttribute("data-scheme");
+          if (v !== "light" && v !== "dark" && v !== "system") return;
+          try {
+            localStorage.setItem(KEY, v);
+          } catch {
+            /* ignore */
+          }
+          document.documentElement.dataset.colorScheme = v;
+          applyMeta(v);
+          syncGroup(root);
+          document.dispatchEvent(
+            new CustomEvent("labdm:color-scheme", {
+              detail: { preference: v, effective: effectiveScheme(v) },
+            }),
+          );
+        });
+      });
+    });
+
+    window.addEventListener("storage", function (e) {
+      if (e.key !== KEY || e.newValue == null) return;
+      if (
+        e.newValue !== "light" &&
+        e.newValue !== "dark" &&
+        e.newValue !== "system"
+      ) {
+        return;
+      }
+      document.documentElement.dataset.colorScheme = e.newValue;
+      applyMeta(e.newValue);
+      document.querySelectorAll("[data-theme-switcher]").forEach(syncGroup);
+    });
+
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", function () {
+      if (readPreference() !== "system") return;
+      applyMeta("system");
+      document.dispatchEvent(
+        new CustomEvent("labdm:color-scheme", {
+          detail: {
+            preference: "system",
+            effective: effectiveScheme("system"),
+          },
+        }),
+      );
+    });
+  })();
+</script>
+
+<style is:global>
+  .theme-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    height: var(--mast-tool-height);
+    gap: 0.35rem 0.5rem;
+  }
+
+  .theme-switcher__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .theme-switcher__group {
+    box-sizing: border-box;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.12rem;
+    height: var(--mast-tool-height);
+    min-height: var(--mast-tool-height);
+    padding: 0 0.18rem;
+    border-radius: var(--mast-tool-radius);
+    border: 1px solid var(--theme-switch-border);
+    background: var(--theme-switch-bg);
+  }
+
+  .theme-switcher__btn {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    height: calc(var(--mast-tool-height) - 6px);
+    min-width: 0;
+    padding: 0 0.42rem;
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--theme-switch-fg);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--mast-tool-radius) - 5px);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .theme-switcher__btn:hover {
+    color: var(--theme-switch-fg-hover);
+    background: var(--theme-switch-hover-bg);
+  }
+
+  .theme-switcher__btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .theme-switcher__btn--active {
+    color: var(--theme-switch-active-fg);
+    background: var(--theme-switch-active-bg);
+  }
+</style>

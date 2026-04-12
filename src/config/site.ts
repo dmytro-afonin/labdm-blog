@@ -1,47 +1,6 @@
 import { palette } from "./palette";
 
-/** Where global social links appear (LinkedIn, X, GitHub). Set URLs in `socialLinks`. */
-export const SocialPlacement = {
-  MAST_TOOLS: 1,
-  BELOW_MAST: 2,
-  AFTER_CONTENT: 3,
-  FIXED_BOTTOM: 4,
-  HEADER_BOTTOM: 5,
-} as const;
-
-export type SocialPlacement =
-  (typeof SocialPlacement)[keyof typeof SocialPlacement];
-
-/** All valid `SocialPlacement` numeric values (for runtime checks). */
-export const SOCIAL_PLACEMENT_VALUES = Object.values(
-  SocialPlacement,
-) as readonly SocialPlacement[];
-
-export function isValidSocialPlacement(
-  value: unknown,
-): value is SocialPlacement {
-  return (
-    typeof value === "number" &&
-    (SOCIAL_PLACEMENT_VALUES as readonly number[]).includes(value)
-  );
-}
-
-/** Use for config-driven placement so invalid/missing values default to mast tools. */
-export function resolveSocialPlacement(value: unknown): SocialPlacement {
-  if (isValidSocialPlacement(value)) return value;
-  return SocialPlacement.MAST_TOOLS;
-}
-
 export type SocialNetwork = "linkedin" | "x" | "github";
-
-export const socialPlacementLabels: Record<SocialPlacement, string> = {
-  [SocialPlacement.MAST_TOOLS]: "Mast — next to RSS (icon chips)",
-  [SocialPlacement.BELOW_MAST]: "Strip — under mast (text links)",
-  [SocialPlacement.AFTER_CONTENT]: "Footer — bottom of every page",
-  [SocialPlacement.FIXED_BOTTOM]: "Fixed — bottom bar (thumb zone)",
-  [SocialPlacement.HEADER_BOTTOM]:
-    "Rail — fixed right on wide screens; strip under mast on narrow",
-};
 
 export const siteConfig = {
   name: "Dmytro Afonin - labdm blog",
@@ -71,8 +30,6 @@ export const siteConfig = {
     x: "https://x.com/DAfonin18409",
     github: "https://github.com/dmytro-afonin",
   },
-  /** Pick layout; see `socialPlacementLabels`. */
-  socialPlacement: SocialPlacement.MAST_TOOLS,
 } as const;
 
 export function getPageTitle(pageTitle?: string) {
