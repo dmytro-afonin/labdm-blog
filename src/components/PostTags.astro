@@ -1,0 +1,23 @@
+---
+import { getTagUrl } from "../utils/posts";
+
+interface Props {
+  tags: string[];
+  /** Accessible name for the tag list, e.g. `Tags for ${title}` */
+  ariaLabel: string;
+}
+
+const { tags, ariaLabel } = Astro.props;
+---
+
+{
+  tags.length > 0 && (
+    <ul class="post-card__tags" aria-label={ariaLabel}>
+      {tags.map((tag) => (
+        <li>
+          <a href={getTagUrl(tag)}>{tag}</a>
+        </li>
+      ))}
+    </ul>
+  )
+}

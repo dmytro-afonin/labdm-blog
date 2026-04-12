@@ -1,0 +1,377 @@
+---
+import SocialIcon from "./SocialIcon.astro";
+import { getSocialLinkItems, SocialPlacement } from "../config/site";
+
+const SOCIAL_VARIANTS = new Set<SocialPlacement>([
+  SocialPlacement.MAST_TOOLS,
+  SocialPlacement.BELOW_MAST,
+  SocialPlacement.AFTER_CONTENT,
+  SocialPlacement.FIXED_BOTTOM,
+  SocialPlacement.HEADER_BOTTOM,
+]);
+
+function shortSocialLabel(label: string) {
+  let s = label.trim();
+  let prev = "";
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/\s+\([^)]*\)$/u, "").trim();
+  }
+  return s;
+}
+
+interface Props {
+  variant: SocialPlacement;
+}
+
+const { variant } = Astro.props;
+
+let safeVariant: SocialPlacement = SocialPlacement.MAST_TOOLS;
+if (SOCIAL_VARIANTS.has(variant)) {
+  safeVariant = variant;
+} else {
+  console.warn(
+    `[SocialLinks] Invalid variant ${String(variant)}; expected one of ${[
+      ...SOCIAL_VARIANTS,
+    ].join(", ")}. Defaulting to ${SocialPlacement.MAST_TOOLS}.`,
+  );
+}
+
+const items = getSocialLinkItems();
+---
+
+{
+  items.length > 0 && (
+    <nav
+      class:list={["site-social", `site-social--v${safeVariant}`]}
+      aria-label="Social profiles"
+    >
+      {safeVariant === SocialPlacement.BELOW_MAST ? (
+        <div class="site-social__strip-inner">
+          <p class="site-social__eyebrow">Elsewhere</p>
+          <p class="site-social__text-row">
+            {items.map((item, i) => (
+              <span class="site-social__seg">
+                {i > 0 && (
+                  <span class="site-social__dot" aria-hidden="true">
+                    {" "}
+                    ·{" "}
+                  </span>
+                )}
+                <a
+                  class="site-social__text-a"
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {shortSocialLabel(item.label)}
+                </a>
+              </span>
+            ))}
+          </p>
+        </div>
+      ) : (
+        <ul class="site-social__list">
+          {items.map((item) => (
+            <li class="site-social__li">
+              <a
+                class:list={["site-social__a", `site-social__a--${item.key}`]}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={item.label}
+              >
+                <SocialIcon network={item.key} />
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </nav>
+  )
+}
+
+<style is:global>
+  /* stylelint-disable no-descending-specificity -- variant sections (v1–v5) are grouped for maintenance; rules are mutually exclusive per modifier class */
+
+  /**
+   * `--site-social-height` mirrors `body.body--social-fixed` in `BaseLayout.astro` for
+   * `getComputedStyle(nav).getPropertyValue("--site-social-height")`.
+   * No separate `--z-modal` in this project yet; if overlays are added in `BaseLayout.astro`, keep v4 above in-flow content and below modal layers.
+   */
+
+  /** When `body` padding is not used, apply the same inset to a main/content wrapper. */
+  .has-site-social--v4-padding {
+    padding-bottom: var(
+      --site-social-height,
+      calc(0.55rem + 2.6rem + 0.55rem + env(safe-area-inset-bottom, 0px))
+    );
+  }
+
+  .site-social__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0.35rem;
+  }
+
+  /* 1 · Mast — icon chips (match RSS affordance) */
+  .site-social--v1 .site-social__a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.35rem;
+    color: rgb(201 168 106 / 78%);
+    text-decoration: none;
+    border: 1px solid rgb(255 255 255 / 8%);
+    background: rgb(0 0 0 / 15%);
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .site-social--v1 .site-social__a:hover {
+    color: #e8d8b8;
+    border-color: rgb(201 168 106 / 25%);
+  }
+
+  .site-social--v1 .site-social__a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .site-social--v1 .social-icon {
+    display: block;
+  }
+
+  /* 2 · Editorial strip */
+  .site-social--v2 {
+    width: min(56rem, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 0.65rem 0 0;
+    border-bottom: 1px solid rgb(255 255 255 / 6%);
+  }
+
+  .site-social__strip-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .site-social__eyebrow {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgb(130 136 130 / 78%);
+  }
+
+  .site-social__text-row {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .site-social__seg {
+    display: inline;
+    white-space: nowrap;
+  }
+
+  .site-social__text-a {
+    color: rgb(188 194 186 / 92%);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .site-social__text-a:hover {
+    color: #e8d8b8;
+    border-bottom-color: rgb(201 168 106 / 35%);
+  }
+
+  .site-social__text-a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* 3 · Footer */
+  .site-social--v3 {
+    width: min(56rem, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2rem 0 3rem;
+    border-top: 1px solid rgb(255 255 255 / 8%);
+  }
+
+  .site-social--v3 .site-social__list {
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .site-social--v3 .site-social__a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    color: rgb(160 168 160 / 88%);
+    text-decoration: none;
+    border: 1px solid rgb(255 255 255 / 10%);
+    background: rgb(0 0 0 / 12%);
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .site-social--v3 .site-social__a:hover {
+    color: #e8d8b8;
+    border-color: rgb(201 168 106 / 28%);
+    background: rgb(201 168 106 / 8%);
+  }
+
+  .site-social--v3 .site-social__a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* 4 · Fixed bottom */
+  .site-social--v4 {
+    --site-social-height: calc(
+      0.55rem + 2.6rem + 0.55rem + env(safe-area-inset-bottom, 0px)
+    );
+
+    position: fixed;
+
+    /* z-index 40: above normal page content; reserve higher bands (e.g. 50+) for modals/dropdowns if added in `BaseLayout.astro` */
+    z-index: 40;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 1rem;
+    padding-bottom: calc(0.55rem + env(safe-area-inset-bottom, 0px));
+    background: rgb(22 26 24 / 88%);
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    backdrop-filter: blur(12px);
+  }
+
+  .site-social--v4 .site-social__list {
+    justify-content: center;
+    gap: 0.65rem;
+  }
+
+  .site-social--v4 .site-social__a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    color: rgb(201 168 106 / 85%);
+    text-decoration: none;
+    border: 1px solid rgb(255 255 255 / 12%);
+    background: rgb(0 0 0 / 25%);
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .site-social--v4 .site-social__a:hover {
+    color: #fff4e4;
+    border-color: rgb(201 168 106 / 40%);
+    background: rgb(201 168 106 / 12%);
+  }
+
+  .site-social--v4 .site-social__a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* 5 · Strip under mast (narrow) → fixed rail (wide) */
+  .site-social--v5 {
+    width: min(56rem, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 0.5rem 0 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .site-social--v5 .site-social__list {
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .site-social--v5 .site-social__a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.45rem;
+    height: 2.45rem;
+    border-radius: 50%;
+    color: rgb(188 194 186 / 90%);
+    text-decoration: none;
+    border: 1px solid rgb(255 255 255 / 9%);
+    background: rgb(0 0 0 / 14%);
+    box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .site-social--v5 .site-social__a:hover {
+    color: #f2e8cc;
+    border-color: rgb(201 168 106 / 32%);
+    background: rgb(201 168 106 / 8%);
+  }
+
+  .site-social--v5 .site-social__a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  @media (width >= 64rem) {
+    .site-social--v5 {
+      position: fixed;
+
+      /* z-index 35: below v4 bottom bar (40) so rail never paints over the thumb strip; align future modal tokens in `BaseLayout.astro` above both */
+      z-index: 35;
+      top: 38%;
+      right: max(0.75rem, calc((100vw - 56rem) / 2 - 3.25rem));
+      width: auto;
+      margin: 0;
+      padding: 0.5rem 0.35rem;
+      transform: translateY(-50%);
+      flex-direction: column;
+      border-radius: 999px;
+      border: 1px solid rgb(255 255 255 / 8%);
+      background: rgb(18 22 20 / 82%);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgb(0 0 0 / 22%);
+    }
+
+    .site-social--v5 .site-social__list {
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+  }
+  /* stylelint-enable no-descending-specificity */
+</style>

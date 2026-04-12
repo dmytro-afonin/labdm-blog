@@ -1,15 +1,11 @@
 ---
 import { render } from "astro:content";
 
+import PostDateRead from "../../components/PostDateRead.astro";
+import PostTags from "../../components/PostTags.astro";
+import PostUpdatedLine from "../../components/PostUpdatedLine.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import {
-  formatPostDate,
-  getPostUrl,
-  getReadingTimeLabel,
-  getTagUrl,
-  getVisiblePosts,
-  type BlogPost,
-} from "../../utils/posts";
+import { getPostUrl, getVisiblePosts, type BlogPost } from "../../utils/posts";
 
 export async function getStaticPaths() {
   const posts = await getVisiblePosts();
@@ -33,12 +29,6 @@ interface Props {
 
 const { post, newerPost, olderPost } = Astro.props;
 const { Content } = await render(post);
-
-const publishedLabel = formatPostDate(post.data.pubDate);
-const updatedLabel = post.data.updatedDate
-  ? formatPostDate(post.data.updatedDate)
-  : null;
-const readingTimeLabel = getReadingTimeLabel(post);
 ---
 
 <BaseLayout
@@ -53,41 +43,18 @@ const readingTimeLabel = getReadingTimeLabel(post);
     <article class="post">
       <header class="post-header">
         <div class="post-meta" aria-label="Post metadata">
-          <p class="meta">
-            Published{" "}
-            <time datetime={post.data.pubDate.toISOString()}>
-              {publishedLabel}
-            </time>
-          </p>
-
+          <PostDateRead post={post} />
           {
-            updatedLabel && post.data.updatedDate && (
-              <p class="meta">
-                Updated{" "}
-                <time datetime={post.data.updatedDate.toISOString()}>
-                  {updatedLabel}
-                </time>
-              </p>
+            post.data.updatedDate && (
+              <PostUpdatedLine updatedDate={post.data.updatedDate} />
             )
           }
-
-          <p class="meta">{readingTimeLabel}</p>
         </div>
 
         <h1>{post.data.title}</h1>
         <p class="description">{post.data.description}</p>
 
-        {
-          post.data.tags.length > 0 && (
-            <ul class="tag-list" aria-label="Post tags">
-              {post.data.tags.map((tag) => (
-                <li>
-                  <a href={getTagUrl(tag)}>{tag}</a>
-                </li>
-              ))}
-            </ul>
-          )
-        }
+        <PostTags tags={post.data.tags} ariaLabel="Post tags" />
       </header>
 
       <div class="prose">
@@ -118,6 +85,7 @@ const readingTimeLabel = getReadingTimeLabel(post);
 </BaseLayout>
 
 <style is:global>
+  /* stylelint-disable no-descending-specificity -- .prose link patterns */
   .back-link {
     display: inline-flex;
     margin-bottom: 1.5rem;
@@ -133,10 +101,9 @@ const readingTimeLabel = getReadingTimeLabel(post);
   .post {
     padding: clamp(1.5rem, 4vw, 2.5rem);
     border: 1px solid var(--border);
-    border-radius: 1.5rem;
+    border-radius: var(--radius-card);
     background: var(--panel);
-    backdrop-filter: blur(14px);
-    box-shadow: 0 24px 80px rgb(15 23 42 / 25%);
+    box-shadow: var(--elev-shadow);
   }
 
   .post-header {
@@ -145,65 +112,45 @@ const readingTimeLabel = getReadingTimeLabel(post);
 
   .post-meta {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
     margin-bottom: 0.75rem;
   }
 
-  .meta {
+  .post-meta :global(.post-card__meta) {
     margin: 0;
-    color: var(--muted);
-    font-size: 0.95rem;
   }
 
   .post-header h1 {
     margin: 0 0 1rem;
-    font-size: clamp(2.5rem, 7vw, 4.25rem);
+    font-size: clamp(1.5rem, 7vw, 2.5rem);
     line-height: 1.02;
   }
 
   .description {
     margin: 0 0 1.25rem;
     color: var(--muted);
-    font-size: 1.1rem;
+    font-size: 1.14rem;
     line-height: 1.7;
   }
 
   .prose {
-    color: var(--text);
-    font-size: 1.05rem;
+    color: var(--body-copy);
+    font-size: 1.08rem;
     line-height: 1.85;
   }
 
   .prose a {
-    color: var(--accent);
-  }
-
-  .tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .tag-list li {
-    display: flex;
-  }
-
-  .tag-list a {
-    padding: 0.35rem 0.8rem;
-    border: 1px solid rgb(56 189 248 / 35%);
-    border-radius: 999px;
-    color: var(--accent);
+    color: var(--accent-soft);
+    font-weight: 600;
     text-decoration: none;
+    border-bottom: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   }
 
-  .tag-list a:hover,
-  .tag-list a:focus-visible {
-    border-color: rgb(56 189 248 / 55%);
-    background: rgb(56 189 248 / 10%);
+  .prose a:hover {
+    color: var(--text);
+    border-bottom-color: var(--accent);
   }
 
   .prose p,
@@ -222,22 +169,20 @@ const readingTimeLabel = getReadingTimeLabel(post);
   }
 
   .prose code {
-    font-family:
-      SFMono-Regular, ui-monospace, "Cascadia Code", "Source Code Pro", Menlo,
-      Consolas, monospace;
+    font-family: var(--font-mono);
   }
 
   .prose pre {
     overflow-x: auto;
     padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: 1rem;
-    background: rgb(2 6 23 / 75%);
+    border-radius: var(--radius-code, 0.55rem);
+    background: var(--code-bg, rgb(22 24 22 / 92%));
   }
 
   .prose blockquote {
     padding-left: 1rem;
-    border-left: 3px solid rgb(56 189 248 / 35%);
+    border-left: 3px solid var(--accent-border);
     color: var(--muted);
   }
 
@@ -254,23 +199,24 @@ const readingTimeLabel = getReadingTimeLabel(post);
     gap: 0.35rem;
     padding: 1rem 1.25rem;
     border: 1px solid var(--border);
-    border-radius: 1rem;
+    border-radius: var(--radius-card);
     background: var(--panel);
+    box-shadow: var(--elev-shadow);
     color: inherit;
     text-decoration: none;
   }
 
   .post-pagination-link:hover {
-    border-color: rgb(56 189 248 / 35%);
+    border-color: var(--accent-border);
   }
 
   .post-pagination-label {
-    color: var(--muted);
+    color: var(--meta);
     font-size: 0.9rem;
   }
 
   .post-pagination-title {
-    color: var(--accent);
+    color: var(--accent-soft);
     font-weight: 600;
   }
 </style>

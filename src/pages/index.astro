@@ -1,86 +1,63 @@
 ---
+import PostCardViewIcon from "../components/PostCardViewIcon.astro";
+import PostDateRead from "../components/PostDateRead.astro";
+import PostTags from "../components/PostTags.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import {
-  formatPostDate,
-  getPostUrl,
-  getReadingTimeLabel,
-  getTagUrl,
-  getVisiblePosts,
-} from "../utils/posts";
+import { getPostUrl, getVisiblePosts, previewBlurb } from "../utils/posts";
 
 const posts = await getVisiblePosts();
 ---
 
 <BaseLayout canonicalPath="/">
   <main>
-    <section class="hero">
-      <div class="pill">labdm blog</div>
-      <h1>
-        Writing about AI, developer tools, the web, and the systems around them.
-      </h1>
-      <p>
-        A markdown-first personal blog built with Astro. The homepage is the
-        reading index, and every article lives on its own dedicated permalink.
-      </p>
-    </section>
-
     <section aria-labelledby="posts-heading">
-      <div class="section-heading">
-        <h2 id="posts-heading">Latest posts</h2>
-        <p>{posts.length} published entries ready to read.</p>
-      </div>
+      <h2 id="posts-heading" class="visually-hidden">Recent posts</h2>
 
       {
         posts.length === 0 ? (
-          <p class="empty-state">
+          <p class="home-empty">
             No posts yet. Add a markdown file under{" "}
             <code>src/content/posts/</code> to publish the first article.
           </p>
         ) : (
-          <ol class="post-list">
+          <ul class="post-feed">
             {posts.map((post) => {
               const href = getPostUrl(post);
               const isDraft = post.data.draft;
               const tags = post.data.tags ?? [];
+              const blurb = previewBlurb(post);
 
               return (
                 <li>
-                  <article class="card">
-                    <div class="meta">
-                      <time datetime={post.data.pubDate.toISOString()}>
-                        {formatPostDate(post.data.pubDate)}
-                      </time>
-                      <span>{getReadingTimeLabel(post)}</span>
-                      {isDraft && <span class="draft-pill">Draft preview</span>}
-                    </div>
-
-                    <h3>
+                  <article class="post-card">
+                    <h3 class="post-card__title">
                       <a href={href}>{post.data.title}</a>
                     </h3>
-
-                    <p>{post.data.excerpt ?? post.data.description}</p>
-
-                    {tags.length > 0 && (
-                      <ul
-                        class="tag-list"
-                        aria-label={`Tags for ${post.data.title}`}
-                      >
-                        {tags.map((tag) => (
-                          <li>
-                            <a href={getTagUrl(tag)}>{tag}</a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    <a class="read-more" href={href}>
-                      Read post
-                    </a>
+                    <p class="post-card__excerpt">{blurb}</p>
+                    <PostTags
+                      tags={tags}
+                      ariaLabel={`Tags for ${post.data.title}`}
+                    />
+                    <footer class="post-card__bar">
+                      <div class="post-card__actions">
+                        <a
+                          class="post-card__view"
+                          href={href}
+                          aria-hidden="true"
+                          tabindex="-1"
+                        >
+                          Read more
+                          <PostCardViewIcon />
+                        </a>
+                        {isDraft && <span class="post-card__draft">Draft</span>}
+                      </div>
+                      <PostDateRead post={post} />
+                    </footer>
                   </article>
                 </li>
               );
             })}
-          </ol>
+          </ul>
         )
       }
     </section>
@@ -88,151 +65,16 @@ const posts = await getVisiblePosts();
 </BaseLayout>
 
 <style>
-  .hero {
-    margin-bottom: 2.5rem;
-  }
-
-  h1 {
-    margin: 0 0 1rem;
-    font-size: clamp(2.5rem, 7vw, 4.75rem);
-    line-height: 1.02;
-  }
-
-  p {
-    max-width: 44rem;
-    margin: 0 0 1.5rem;
-    color: var(--muted);
-    font-size: 1.05rem;
-    line-height: 1.7;
-  }
-
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1.25rem;
-    padding: 0.45rem 0.85rem;
-    border: 1px solid rgb(56 189 248 / 35%);
-    border-radius: 999px;
-    color: var(--accent);
-    font-size: 0.95rem;
-  }
-
-  .section-heading {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .section-heading h2 {
-    margin: 0;
-    font-size: 1.25rem;
-  }
-
-  .section-heading p {
-    margin: 0;
-    font-size: 0.95rem;
-  }
-
-  .post-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 1rem;
-  }
-
-  .card {
-    padding: 1.5rem;
-    border: 1px solid var(--border);
-    border-radius: 1.25rem;
-    background: var(--panel);
-    backdrop-filter: blur(14px);
-    box-shadow: 0 24px 80px rgb(15 23 42 / 20%);
-  }
-
-  .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-    margin-bottom: 0.75rem;
-    color: var(--muted);
-    font-size: 0.95rem;
-  }
-
-  .draft-pill {
-    padding: 0.2rem 0.55rem;
-    border-radius: 999px;
-    border: 1px solid rgb(56 189 248 / 35%);
-    color: var(--accent);
-  }
-
-  h3 {
-    margin: 0 0 0.75rem;
-    font-size: clamp(1.4rem, 4vw, 1.8rem);
-  }
-
-  h3 a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    list-style: none;
-    margin: 0 0 1rem;
-    padding: 0;
-  }
-
-  .tag-list li {
-    display: flex;
-  }
-
-  .tag-list a {
-    padding: 0.35rem 0.8rem;
-    border: 1px solid rgb(56 189 248 / 35%);
-    border-radius: 999px;
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  h3 a:hover {
-    color: var(--accent);
-  }
-
-  .tag-list a:hover,
-  .tag-list a:focus-visible {
-    border-color: rgb(56 189 248 / 55%);
-    background: rgb(56 189 248 / 10%);
-  }
-
-  .read-more {
-    display: inline-flex;
-    align-items: center;
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 600;
-  }
-
-  .read-more:hover {
-    text-decoration: underline;
-  }
-
-  .empty-state {
+  .home-empty {
     padding: 1.25rem 1.5rem;
     border: 1px dashed var(--border);
-    border-radius: 1rem;
+    border-radius: var(--radius-card);
+    color: var(--muted);
+    font-size: 1.02rem;
+    line-height: 1.6;
   }
 
-  @media (width <= 720px) {
-    .section-heading {
-      align-items: start;
-      flex-direction: column;
-    }
+  .home-empty code {
+    font-size: 0.88em;
   }
 </style>
