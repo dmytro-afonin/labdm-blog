@@ -55,6 +55,7 @@ const showSocial = hasSocialLinks();
                 : window.matchMedia("(prefers-color-scheme: dark)").matches
                   ? "dark"
                   : "light";
+          document.documentElement.dataset.colorSchemeEffective = eff;
           const meta = document.querySelector('meta[name="theme-color"]');
           if (meta)
             meta.setAttribute(
@@ -63,6 +64,10 @@ const showSocial = hasSocialLinks();
             );
         } catch {
           document.documentElement.dataset.colorScheme = "system";
+          document.documentElement.dataset.colorSchemeEffective =
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
         }
       })();
     </script>
@@ -114,6 +119,9 @@ const showSocial = hasSocialLinks();
         /** Mast: theme switcher, social chips, RSS — shared size + corner radius (matches cards / post pagination). */
         --mast-tool-height: 2.35rem;
         --mast-tool-radius: var(--radius-card);
+
+        /** Keyboard focus ring thickness (see shared :focus-visible rules below). */
+        --focus-ring-width: 2px;
 
         --theme-shift-duration: 0.32s;
 
@@ -245,135 +253,9 @@ const showSocial = hasSocialLinks();
         --social-hover-line: rgb(201 168 106 / 25%);
       }
 
-      @media (prefers-color-scheme: light) {
-        html[data-color-scheme="system"] {
-          color-scheme: light;
-
-          --theme-green: #4d5650;
-
-          --color-text: #1e231e;
-          --color-accent: #6b5420;
-          --color-bg: #1a1d1a;
-
-          --color-theme: var(--theme-green);
-          --accent: #b8944a;
-          --accent-soft: #7a5f28;
-          --accent-additional: #8f5e52;
-          --accent-border: color-mix(in srgb, var(--accent) 42%, transparent);
-          --accent-border-strong: color-mix(
-            in srgb,
-            var(--accent) 58%,
-            transparent
-          );
-          --accent-bg-subtle: color-mix(
-            in srgb,
-            var(--accent) 14%,
-            transparent
-          );
-
-          --text-primary: #131813;
-          --text-muted: #5a6058;
-          --text-body: #2c322c;
-          --text-meta: #656c64;
-
-          --text: var(--text-primary);
-          --muted: var(--text-muted);
-          --body-copy: var(--text-body);
-          --meta: var(--text-meta);
-
-          --page-a: #ebe7dc;
-          --page-b: #e4e0d4;
-          --page-c: #dbd6cc;
-
-          --panel-a: #fffcf7;
-          --panel-b: #f0ebe3;
-
-          --border: rgb(0 0 0 / 9%);
-
-          --panel: linear-gradient(
-            145deg,
-            var(--panel-a) 0%,
-            var(--panel-b) 100%
-          );
-
-          --elev-shadow:
-            0 2px 18px rgb(0 0 0 / 8%), inset 0 1px 0 rgb(255 255 255 / 45%);
-
-          --mast-desc: rgb(62 68 62 / 85%);
-
-          --rss-fg: rgb(110 82 36 / 88%);
-          --rss-border: rgb(0 0 0 / 10%);
-          --rss-bg: rgb(255 255 255 / 72%);
-          --rss-hover-border: rgb(140 110 50 / 35%);
-
-          --subscribe-border: rgb(0 0 0 / 11%);
-          --subscribe-input-bg: rgb(255 255 255 / 55%);
-          --subscribe-divider: rgb(0 0 0 / 9%);
-          --subscribe-btn-bg: #e8e4dc;
-          --subscribe-btn-bg-hover: #ddd9d0;
-          --subscribe-btn-fg: rgb(72 76 70 / 92%);
-          --subscribe-btn-fg-hover: #4a3a12;
-
-          --post-card-a: #fefdfa;
-          --post-card-b: #f3efe6;
-
-          --excerpt-fg: rgb(38 44 38 / 92%);
-
-          --tag-fg: rgb(72 78 72 / 92%);
-          --tag-decor: rgb(100 108 100 / 45%);
-          --tag-hover-fg: rgb(42 48 42 / 96%);
-          --tag-hover-decor: rgb(140 110 50 / 50%);
-
-          --meta-fg: rgb(88 94 88 / 82%);
-
-          --view-hover-fg: #1a1c1a;
-
-          --post-card-view-fg: #3a3328;
-          --post-card-view-bg: color-mix(in srgb, var(--accent) 26%, #fff 74%);
-          --post-card-view-border: color-mix(
-            in srgb,
-            var(--accent) 34%,
-            #e8e2d8 66%
-          );
-          --post-card-view-hover-fg: #2a241c;
-          --post-card-view-hover-bg: color-mix(
-            in srgb,
-            var(--accent) 34%,
-            #fff 66%
-          );
-
-          --post-card-draft-fg: #6b3e3a;
-          --post-card-draft-bg: color-mix(
-            in srgb,
-            var(--accent-additional) 12%,
-            #fff 88%
-          );
-          --post-card-draft-border: color-mix(
-            in srgb,
-            var(--accent-additional) 34%,
-            transparent
-          );
-
-          --code-bg: rgb(244 241 234 / 96%);
-
-          --theme-switch-border: rgb(0 0 0 / 12%);
-          --theme-switch-bg: rgb(255 255 255 / 55%);
-          --theme-switch-fg: rgb(52 56 52 / 88%);
-          --theme-switch-fg-hover: #4a3a12;
-          --theme-switch-hover-bg: rgb(0 0 0 / 5%);
-          --theme-switch-active-fg: #1e221a;
-          --theme-switch-active-bg: rgb(201 168 106 / 28%);
-
-          --social-accent: rgb(130 100 40 / 85%);
-          --social-line: rgb(0 0 0 / 10%);
-          --social-surface: rgb(255 255 255 / 65%);
-          --social-hover-fg: #5c4818;
-          --social-hover-line: rgb(140 110 50 / 38%);
-        }
-      }
-
-      /** Light — explicit toggle. */
-      html[data-color-scheme="light"] {
+      /** Light palette once: explicit `light` or `data-color-scheme-effective` (inline script + ThemeSwitcher). */
+      html[data-color-scheme="light"],
+      html[data-color-scheme-effective="light"] {
         color-scheme: light;
 
         --theme-green: #4d5650;
@@ -704,15 +586,38 @@ const showSocial = hasSocialLinks();
         border-color: var(--rss-hover-border);
       }
 
+      /**
+       * Single accent focus ring site-wide. Prefer box-shadow over outline so the ring
+       * follows border-radius (Subscribe pill, post titles, pills, etc.).
+       */
+      .site-mast__brand:focus-visible,
+      .site-mast__rss:focus-visible,
+      .post-card__title a:focus-visible,
+      .post-card__tags a:focus-visible,
+      .post-card__view:focus-visible,
+      .theme-switcher__btn:focus-visible,
+      .site-social .site-social__a:focus-visible,
+      .back-link:focus-visible,
+      .prose a:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 var(--focus-ring-width) var(--accent);
+      }
+
       .site-mast__brand:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 4px;
         border-radius: 0.25rem;
       }
 
-      .site-mast__rss:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
+      .post-card__title a:focus-visible,
+      .prose a:focus-visible {
+        border-radius: 0.12em;
+      }
+
+      .post-card__tags a:focus-visible {
+        border-radius: 2px;
+      }
+
+      .back-link:focus-visible {
+        border-radius: 0.15rem;
       }
 
       .site-mast__tools {
@@ -814,12 +719,6 @@ const showSocial = hasSocialLinks();
         text-decoration-color: var(--tag-hover-decor);
       }
 
-      .post-card__tags a:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-        border-radius: 2px;
-      }
-
       .post-card__bar {
         display: flex;
         flex-wrap: wrap;
@@ -859,11 +758,6 @@ const showSocial = hasSocialLinks();
       .post-card__view:hover {
         color: var(--post-card-view-hover-fg);
         background: var(--post-card-view-hover-bg);
-      }
-
-      .post-card__view:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 3px;
       }
 
       .post-card__draft {

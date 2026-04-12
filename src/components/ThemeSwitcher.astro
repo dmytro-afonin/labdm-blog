@@ -82,6 +82,8 @@ const labelId = `theme-switcher-label-${randomUUID()}`;
             /* ignore */
           }
           document.documentElement.dataset.colorScheme = v;
+          document.documentElement.dataset.colorSchemeEffective =
+            effectiveScheme(v);
           applyMeta(v);
           document.querySelectorAll("[data-theme-switcher]").forEach(syncGroup);
           document.dispatchEvent(
@@ -103,6 +105,9 @@ const labelId = `theme-switcher-label-${randomUUID()}`;
         return;
       }
       document.documentElement.dataset.colorScheme = e.newValue;
+      document.documentElement.dataset.colorSchemeEffective = effectiveScheme(
+        e.newValue,
+      );
       applyMeta(e.newValue);
       document.querySelectorAll("[data-theme-switcher]").forEach(syncGroup);
     });
@@ -110,6 +115,8 @@ const labelId = `theme-switcher-label-${randomUUID()}`;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener("change", function () {
       if (readPreference() !== "system") return;
+      document.documentElement.dataset.colorSchemeEffective =
+        effectiveScheme("system");
       applyMeta("system");
       document.dispatchEvent(
         new CustomEvent("labdm:color-scheme", {
@@ -186,11 +193,6 @@ const labelId = `theme-switcher-label-${randomUUID()}`;
   .theme-switcher__btn:hover {
     color: var(--theme-switch-fg-hover);
     background: var(--theme-switch-hover-bg);
-  }
-
-  .theme-switcher__btn:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
   }
 
   .theme-switcher__btn--active {

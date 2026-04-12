@@ -98,8 +98,7 @@ const pageDescription = `Browse ${posts.length} published ${posts.length === 1 ?
                       <a
                         class="post-card__view"
                         href={href}
-                        aria-hidden="true"
-                        tabindex="-1"
+                        aria-label={`Read more: ${post.data.title}`}
                       >
                         Read more
                         <PostCardViewIcon />
@@ -130,12 +129,6 @@ const pageDescription = `Browse ${posts.length} published ${posts.length === 1 ?
 
   .back-link:hover {
     text-decoration: underline;
-  }
-
-  .back-link:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-    border-radius: 0.15rem;
   }
 
   .tag-page {

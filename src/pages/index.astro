@@ -43,8 +43,7 @@ const posts = await getVisiblePosts();
                         <a
                           class="post-card__view"
                           href={href}
-                          aria-hidden="true"
-                          tabindex="-1"
+                          aria-label={`Read more: ${post.data.title}`}
                         >
                           Read more
                           <PostCardViewIcon />
