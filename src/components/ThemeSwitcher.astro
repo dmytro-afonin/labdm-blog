@@ -166,13 +166,24 @@ import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
 
 <style is:global>
   /* Pill control: closed = icon + hover ring; open = options + trigger in one chip. */
+
+  /**
+   * Whole control is absolute in `.site-mast__tools` so open/closed width never
+   * shifts the mast row; the tools cell reserves a slot via min-* there.
+   */
   .theme-dd {
     box-sizing: border-box;
-    position: relative;
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 3;
     display: inline-block;
     height: var(--mast-tool-height);
     border-radius: 999px;
     vertical-align: middle;
+
+    /* Opaque surface so the control doesn’t show mast text through when absolute */
+    background: var(--page-a);
   }
 
   .theme-dd > summary.theme-dd__trigger {
@@ -227,7 +238,7 @@ import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
     max-height: var(--mast-tool-height);
     padding: 0 0 0 0.14rem;
     border: none;
-    background: transparent;
+    background: var(--page-a);
     box-shadow: 0 0 0 1px var(--theme-switch-border);
     min-width: var(--mast-tool-height);
   }
