@@ -144,6 +144,7 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
 
       html {
         font-size: 106.25%;
+        overflow-x: hidden;
       }
 
       body {
@@ -195,10 +196,47 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
       main {
         width: min(56rem, calc(100% - 2rem));
         margin: 0 auto;
-        padding: 2rem 0 6rem;
+        padding: 1rem 0 6rem;
       }
 
-      /* —— Olive mast —— */
+      /* Lower max-width = desktop mast longer; mobile only on narrower viewports. */
+      @media (width <= 40rem) {
+        main {
+          padding-top: 0.75rem;
+        }
+      }
+
+      /**
+       * Simple text pages whose main content is a leading h1 + paragraphs (e.g. newsletter states).
+       * Scoped to direct children so post/tag listings with back-links or sections are unaffected.
+       */
+      main > h1:first-child {
+        margin: 0 0 1rem;
+        font-size: clamp(1.35rem, 3vw, 1.75rem);
+      }
+
+      main > p {
+        margin: 0 0 1rem;
+        color: var(--body-copy);
+        line-height: 1.65;
+        max-width: 36rem;
+      }
+
+      main > p:last-child {
+        margin-bottom: 0;
+      }
+
+      main > p > a {
+        color: var(--color-accent);
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+      }
+
+      main > p > a:hover {
+        color: var(--accent-soft);
+      }
+
+      /* —— Mast (header): two bands — top bar, then subscribe + meta —— */
       .site-mast {
         width: min(56rem, calc(100% - 2rem));
         margin: 0 auto;
@@ -211,11 +249,12 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
 
       .site-mast__top {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: flex-start;
         justify-content: space-between;
         gap: 1rem 1.25rem;
         width: 100%;
+        min-width: 0;
       }
 
       .site-mast__column {
@@ -230,33 +269,50 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
         text-decoration: none;
         color: inherit;
         min-width: 0;
-        align-self: flex-start;
       }
 
+      /**
+       * Subscribe strip: form and meta share one flex row on wide screens.
+       * On narrow screens we stack (column) but never use flex-grow — that was causing huge gaps.
+       */
       .site-mast__subscribe-wrap {
         width: 100%;
-        display: flex;
-        justify-content: center;
+        min-width: 0;
         padding-top: 0.35rem;
       }
 
-      .site-mast__subscribe-rss {
+      .site-mast__below {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: center;
-        gap: 0.45rem;
+        flex-flow: row wrap;
+        align-items: flex-start;
+        gap: 0.45rem 0.65rem;
         width: 100%;
-        max-width: min(36rem, 100%);
+        min-width: 0;
       }
 
-      .site-mast__subscribe-rss .subscribe-form {
+      .site-mast__below > .subscribe-form {
         flex: 0 1 22rem;
         max-width: 22rem;
         width: min(100%, 22rem);
       }
 
-      .site-mast__subscribe-rss > .site-mast__rss {
+      .site-mast__meta {
+        display: flex;
+        flex-flow: row wrap;
+        align-items: center;
+        gap: 0.45rem 0.65rem;
+        min-width: 0;
+
+        /* Take remaining width so margin-left: auto on socials hits the true right */
+        flex: 1 1 10rem;
+      }
+
+      .site-mast__meta > .site-social {
+        margin-left: auto;
+        flex: 0 0 auto;
+      }
+
+      .site-mast__meta > .site-mast__rss {
         flex: 0 0 auto;
       }
 
@@ -355,7 +411,8 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
       .post-card__title a:focus-visible,
       .post-card__tags a:focus-visible,
       .post-card__view:focus-visible,
-      .theme-switcher__btn:focus-visible,
+      .theme-dd__trigger:focus-visible,
+      .theme-dd__opt:focus-visible,
       .site-social .site-social__a:focus-visible,
       .back-link:focus-visible,
       .prose a:focus-visible {
@@ -382,18 +439,70 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
 
       .site-mast__tools {
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 0.45rem;
-        flex-shrink: 0;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 0 0 auto;
+        align-self: flex-start;
       }
 
-      .site-mast__tools .theme-switcher {
+      .site-mast__tools .theme-dd {
         flex: 0 0 auto;
       }
 
-      .site-mast__tools .site-social {
-        flex: 0 0 auto;
+      @media (width <= 40rem) {
+        .site-mast {
+          gap: 0.5rem;
+        }
+
+        .site-mast__logo-wrap {
+          width: 3.5rem;
+          height: 3.5rem;
+        }
+
+        .site-mast__text {
+          min-height: 3.5rem;
+        }
+
+        .site-mast__brand {
+          gap: 0.85rem;
+        }
+
+        .site-mast__subscribe-wrap {
+          padding-top: 0.2rem;
+        }
+
+        .site-mast__below {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0.45rem;
+        }
+
+        .site-mast__below > .subscribe-form {
+          align-self: stretch;
+          flex: 0 0 auto;
+          width: 100%;
+          max-width: none;
+          min-width: 0;
+        }
+
+        /* RSS left, socials right — single short row; no flex-grow */
+        .site-mast__meta {
+          flex: 0 0 auto;
+          flex-flow: row nowrap;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          gap: 0.5rem;
+        }
+
+        .site-mast__meta > .site-social {
+          margin-left: 0;
+        }
+
+        /* Meta only contains socials (no RSS feed): keep chips on the right */
+        .site-mast__meta:not(:has(.site-mast__rss)) {
+          justify-content: flex-end;
+        }
       }
 
       /* —— Index / tag post cards (Olive) —— */
@@ -585,13 +694,15 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
           </div>
           <div class="site-mast__tools">
             <ThemeSwitcher />
-            <SocialLinks />
           </div>
         </div>
         <div class="site-mast__subscribe-wrap">
-          <div class="site-mast__subscribe-rss">
+          <div class="site-mast__below">
             <SubscribeForm />
-            {rssFeed && <RssLink path={rssFeed.path} type={rssFeed.type} />}
+            <div class="site-mast__meta">
+              {rssFeed && <RssLink path={rssFeed.path} type={rssFeed.type} />}
+              <SocialLinks />
+            </div>
           </div>
         </div>
       </div>
