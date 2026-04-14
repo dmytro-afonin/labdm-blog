@@ -12,6 +12,7 @@ interface Props {
   description?: string;
   canonicalPath?: string;
   ogType?: "website" | "article";
+  noIndex?: boolean;
 }
 
 const {
@@ -19,6 +20,7 @@ const {
   description = siteConfig.description,
   canonicalPath = Astro.url.pathname,
   ogType = "website",
+  noIndex = false,
 } = Astro.props;
 
 const pageTitle = getPageTitle(title);
@@ -82,6 +84,7 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
+    {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={siteConfig.name} />

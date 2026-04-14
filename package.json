@@ -14,6 +14,8 @@
     "lint:styles": "stylelint \"src/**/*.{astro,css,scss}\" --allow-empty-input",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "newsletter:sync": "bun run scripts/newsletter-sync.ts",
+    "newsletter:sync:report": "bun run scripts/newsletter-sync-report.ts",
     "test": "bun run typecheck",
     "verify": "bun run build && bun run test",
     "verify:push": "bun run format:check && bun run lint && bun run typecheck && bun run build && bun run smoke",
@@ -41,7 +43,8 @@
   "dependencies": {
     "@astrojs/vercel": "10.0.4",
     "@neondatabase/serverless": "^1.0.2",
-    "astro": "6.1.4"
+    "astro": "6.1.4",
+    "svix": "^1.90.0"
   },
   "smoke": {
     "expectedSnippets": [

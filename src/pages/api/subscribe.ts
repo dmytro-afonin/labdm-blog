@@ -1,9 +1,12 @@
 import type { APIRoute } from "astro";
-import { getNeonSql, isDatabaseConfigured } from "../../lib/neon";
+import {
+  isValidNewsletterEmail,
+  normalizeNewsletterEmail,
+  subscribeNewsletterEmail,
+} from "../../lib/newsletter";
+import { isDatabaseConfigured } from "../../lib/neon";
 
 export const prerender = false;
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const POST: APIRoute = async ({ request, redirect }) => {
   if (!isDatabaseConfigured()) {
@@ -31,22 +34,18 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   }
 
   const raw = formData.get("email");
-  const email = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  if (!email || !emailPattern.test(email)) {
+  const email = typeof raw === "string" ? normalizeNewsletterEmail(raw) : "";
+  if (!email || !isValidNewsletterEmail(email)) {
     return redirect("/newsletter/invalid");
   }
 
   try {
-    const sql = getNeonSql();
-    const inserted = await sql`
-      INSERT INTO subscribers (email)
-      VALUES (${email})
-      ON CONFLICT (email) DO NOTHING
-      RETURNING id
-    `;
-    const rows = inserted as { id: string }[];
-    if (!rows.length) {
+    const result = await subscribeNewsletterEmail(email);
+    if (result === "already-subscribed") {
       return redirect("/newsletter/already");
+    }
+    if (result === "resubscribed") {
+      return redirect("/newsletter/resubscribed");
     }
     return redirect("/newsletter/thanks");
   } catch {
