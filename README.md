@@ -27,6 +27,40 @@ Useful scripts:
 - `bun run typecheck`
 - `bun run build`
 - `bun run preview`
+- `bun run newsletter:sync`
+- `bun run newsletter:sync:report`
+
+## Newsletter subscriber platform
+
+The blog stores newsletter subscribers in Neon and treats that table as the
+source of truth for subscriber state.
+
+Environment variables:
+
+- `POSTGRES_URL`
+- `RESEND_API_KEY`
+- `RESEND_WEBHOOK_SECRET`
+- `NEWSLETTER_TOKEN_SECRET`
+
+Current subscriber flows:
+
+- `POST /api/subscribe` captures or re-subscribes a local subscriber record.
+- `/newsletter/manage/[token]` lets a subscriber unsubscribe or re-subscribe
+  via a signed management link.
+- `bun run newsletter:sync` manually pushes pending or failed subscriber rows
+  to Resend Contacts.
+- `bun run newsletter:sync:report` prints current sync counts and failed rows.
+- `POST /api/resend/webhook` reconciles Resend `contact.created`,
+  `contact.updated`, and `contact.deleted` events back into Neon.
+
+Recommended Resend setup:
+
+1. Add a webhook in Resend pointing at `/api/resend/webhook`.
+2. Subscribe that webhook to `contact.created`, `contact.updated`, and
+   `contact.deleted`.
+3. Store the webhook signing secret in `RESEND_WEBHOOK_SECRET`.
+4. Run `bun run newsletter:sync` after local subscriber changes or whenever
+   `newsletter:sync:report` shows failed rows.
 
 ## Deployment flow
 

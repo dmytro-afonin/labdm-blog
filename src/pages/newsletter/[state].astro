@@ -34,6 +34,30 @@ export function getStaticPaths() {
           "We couldn't save your subscription right now. Please try again in a moment.",
       },
     },
+    {
+      params: { state: "resubscribed" },
+      props: {
+        title: "Subscription restored",
+        message:
+          "You're back on the list. You'll start receiving emails again.",
+      },
+    },
+    {
+      params: { state: "unsubscribed" },
+      props: {
+        title: "Unsubscribed",
+        message:
+          "You have been removed from newsletter updates. If you change your mind, the same manage link can subscribe you again.",
+      },
+    },
+    {
+      params: { state: "manage-invalid" },
+      props: {
+        title: "Manage link expired",
+        message:
+          "That newsletter management link is invalid or no longer matches a subscriber record.",
+      },
+    },
   ];
 }
 
@@ -45,7 +69,11 @@ interface Props {
 const { title, message } = Astro.props;
 ---
 
-<BaseLayout title={title} canonicalPath={`/newsletter/${Astro.params.state}`}>
+<BaseLayout
+  title={title}
+  canonicalPath={`/newsletter/${Astro.params.state}`}
+  noIndex
+>
   <main>
     <h1>{title}</h1>
     <p>{message}</p>
