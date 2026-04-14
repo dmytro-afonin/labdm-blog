@@ -38,7 +38,8 @@ source of truth for subscriber state.
 Environment variables:
 
 - `POSTGRES_URL`
-- `RESEND_API_KEY`
+- `RESEND_API_KEY` — optional if you only sync contacts; may be a send-only key for outbound email
+- `RESEND_CONTACTS_API_KEY` — full-access Resend key for the Contacts API (`newsletter:sync`). If omitted, `RESEND_API_KEY` is used and must not be send-only
 - `RESEND_WEBHOOK_SECRET`
 - `NEWSLETTER_TOKEN_SECRET`
 
