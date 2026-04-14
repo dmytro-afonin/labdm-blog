@@ -38,14 +38,26 @@ class ResendApiError extends Error {
   }
 }
 
-function getRequiredEnv(
-  name: "RESEND_API_KEY" | "RESEND_WEBHOOK_SECRET",
-): string {
+function getRequiredEnv(name: "RESEND_WEBHOOK_SECRET"): string {
   const value = process.env[name];
   if (!value || !value.trim()) {
     throw new Error(`${name} is not configured.`);
   }
   return value.trim();
+}
+
+/**
+ * Resend “Sending” API keys cannot call the Contacts API. Use a full-access key
+ * here (`RESEND_CONTACTS_API_KEY`), or a single full-access `RESEND_API_KEY`.
+ */
+function getResendContactsApiKey(): string {
+  const contacts = process.env.RESEND_CONTACTS_API_KEY?.trim();
+  if (contacts) return contacts;
+  const fallback = process.env.RESEND_API_KEY?.trim();
+  if (fallback) return fallback;
+  throw new Error(
+    "RESEND_CONTACTS_API_KEY or RESEND_API_KEY must be configured for Resend Contacts API (newsletter sync). Send-only keys are not sufficient; use a full-access key or set RESEND_CONTACTS_API_KEY.",
+  );
 }
 
 function extractErrorMessage(body: unknown, fallback: string): string {
@@ -110,7 +122,7 @@ async function resendRequest<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const apiKey = getRequiredEnv("RESEND_API_KEY");
+  const apiKey = getResendContactsApiKey();
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${apiKey}`);
   headers.set("Accept", "application/json");
