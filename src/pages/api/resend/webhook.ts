@@ -32,8 +32,17 @@ export const POST: APIRoute = async ({ request }) => {
     payload: event as unknown as Record<string, unknown>,
   });
 
-  if (begun.duplicate || !begun.eventId) {
+  if (
+    begun.duplicate &&
+    (begun.existingStatus === "success" || begun.existingStatus === "ignored")
+  ) {
     return Response.json({ ok: true, duplicate: true });
+  }
+
+  if (!begun.eventId) {
+    return new Response("Webhook event could not be reserved.", {
+      status: 500,
+    });
   }
 
   try {

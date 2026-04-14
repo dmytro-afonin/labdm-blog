@@ -126,7 +126,16 @@ async function resendRequest<T>(
   });
 
   const raw = await response.text();
-  const body = raw ? (JSON.parse(raw) as unknown) : null;
+  const contentType = response.headers.get("content-type") ?? "";
+  let body: unknown = raw || null;
+
+  if (raw && contentType.includes("application/json")) {
+    try {
+      body = JSON.parse(raw) as unknown;
+    } catch {
+      body = raw;
+    }
+  }
 
   if (!response.ok) {
     throw new ResendApiError(

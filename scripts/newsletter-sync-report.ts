@@ -4,7 +4,12 @@ function parseLimit(): number | undefined {
   const raw = process.argv[2];
   if (!raw) return undefined;
 
-  const value = Number.parseInt(raw, 10);
+  const normalized = raw.trim();
+  if (!/^\d+$/.test(normalized)) {
+    throw new Error("newsletter:sync:report limit must be a positive integer.");
+  }
+
+  const value = Number.parseInt(normalized, 10);
   if (!Number.isFinite(value) || value <= 0) {
     throw new Error("newsletter:sync:report limit must be a positive integer.");
   }

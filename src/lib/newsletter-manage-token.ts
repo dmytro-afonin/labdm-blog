@@ -38,7 +38,10 @@ export function createNewsletterManageToken(
 export function verifyNewsletterManageToken(
   token: string,
 ): NewsletterManageTokenPayload | null {
-  const [encodedPayload, encodedSignature] = token.trim().split(".");
+  const parts = token.trim().split(".");
+  if (parts.length !== 2) return null;
+
+  const [encodedPayload, encodedSignature] = parts;
   if (!encodedPayload || !encodedSignature) return null;
 
   const expectedSignature = sign(encodedPayload);

@@ -13,6 +13,23 @@ import {
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const defaultSyncLimit = 25;
 const maxSyncErrorLength = 1000;
+const SUBSCRIBER_COLUMNS = `
+  id,
+  email,
+  consent,
+  status,
+  sync_status,
+  resend_contact_id,
+  created_at,
+  subscribed_at,
+  updated_at,
+  unsubscribed_at,
+  sync_requested_at,
+  last_synced_at,
+  last_sync_error,
+  sync_attempt_count,
+  last_webhook_at
+`;
 
 export type NewsletterSubscriberStatus = "subscribed" | "unsubscribed";
 export type NewsletterSyncStatus = "pending" | "synced" | "failed";
@@ -60,8 +77,15 @@ interface FailedSyncRow {
   last_synced_at: string | null;
 }
 
-interface SyncEventRow {
+type SyncEventStatus = "received" | "success" | "failed" | "ignored";
+
+interface SyncEventInsertRow {
   id: string;
+}
+
+interface SyncEventStatusRow {
+  id: string;
+  status: SyncEventStatus;
 }
 
 export interface NewsletterSubscriber {
@@ -176,21 +200,7 @@ async function getSubscriberById(
   const sql = getNeonSql();
   return querySingleSubscriber(sql`
     SELECT
-      id,
-      email,
-      consent,
-      status,
-      sync_status,
-      resend_contact_id,
-      created_at,
-      subscribed_at,
-      updated_at,
-      unsubscribed_at,
-      sync_requested_at,
-      last_synced_at,
-      last_sync_error,
-      sync_attempt_count,
-      last_webhook_at
+      ${sql.unsafe(SUBSCRIBER_COLUMNS)}
     FROM subscribers
     WHERE id = ${id}
     LIMIT 1
@@ -203,21 +213,7 @@ async function getSubscriberByEmail(
   const sql = getNeonSql();
   return querySingleSubscriber(sql`
     SELECT
-      id,
-      email,
-      consent,
-      status,
-      sync_status,
-      resend_contact_id,
-      created_at,
-      subscribed_at,
-      updated_at,
-      unsubscribed_at,
-      sync_requested_at,
-      last_synced_at,
-      last_sync_error,
-      sync_attempt_count,
-      last_webhook_at
+      ${sql.unsafe(SUBSCRIBER_COLUMNS)}
     FROM subscribers
     WHERE email = ${email}
     LIMIT 1
@@ -230,21 +226,7 @@ async function getSubscriberByResendContactId(
   const sql = getNeonSql();
   return querySingleSubscriber(sql`
     SELECT
-      id,
-      email,
-      consent,
-      status,
-      sync_status,
-      resend_contact_id,
-      created_at,
-      subscribed_at,
-      updated_at,
-      unsubscribed_at,
-      sync_requested_at,
-      last_synced_at,
-      last_sync_error,
-      sync_attempt_count,
-      last_webhook_at
+      ${sql.unsafe(SUBSCRIBER_COLUMNS)}
     FROM subscribers
     WHERE resend_contact_id = ${resendContactId}
     LIMIT 1
@@ -275,21 +257,7 @@ async function updateSubscriberStatus(
       last_sync_error = NULL
     WHERE id = ${subscriberId}
     RETURNING
-      id,
-      email,
-      consent,
-      status,
-      sync_status,
-      resend_contact_id,
-      created_at,
-      subscribed_at,
-      updated_at,
-      unsubscribed_at,
-      sync_requested_at,
-      last_synced_at,
-      last_sync_error,
-      sync_attempt_count,
-      last_webhook_at
+      ${sql.unsafe(SUBSCRIBER_COLUMNS)}
   `) as SubscriberRow[];
 
   const row = rows[0];
@@ -422,21 +390,7 @@ async function listSubscribersNeedingSync(
   const sql = getNeonSql();
   const rows = (await sql`
     SELECT
-      id,
-      email,
-      consent,
-      status,
-      sync_status,
-      resend_contact_id,
-      created_at,
-      subscribed_at,
-      updated_at,
-      unsubscribed_at,
-      sync_requested_at,
-      last_synced_at,
-      last_sync_error,
-      sync_attempt_count,
-      last_webhook_at
+      ${sql.unsafe(SUBSCRIBER_COLUMNS)}
     FROM subscribers
     WHERE sync_status IN ('pending', 'failed')
     ORDER BY sync_requested_at ASC, created_at ASC
@@ -484,7 +438,7 @@ async function insertSyncEvent(input: {
   subscriberId: string | null;
   direction: "outbound" | "webhook";
   eventType: string;
-  status: "received" | "success" | "failed" | "ignored";
+  status: SyncEventStatus;
   providerEventId?: string | null;
   errorMessage?: string | null;
   payload?: Record<string, unknown> | null;
@@ -513,7 +467,7 @@ async function insertSyncEvent(input: {
       ${payloadJson}::jsonb
     )
     RETURNING id
-  `) as SyncEventRow[];
+  `) as SyncEventInsertRow[];
 
   const eventId = rows[0]?.id;
   if (!eventId) {
@@ -534,11 +488,31 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
+async function getSyncEventByProviderEventId(
+  providerEventId: string,
+): Promise<SyncEventStatusRow | null> {
+  const sql = getNeonSql();
+  const rows = (await sql`
+    SELECT
+      id,
+      status
+    FROM subscriber_sync_events
+    WHERE provider_event_id = ${providerEventId}
+    LIMIT 1
+  `) as SyncEventStatusRow[];
+
+  return rows[0] ?? null;
+}
+
 export async function beginResendWebhookEvent(input: {
   providerEventId: string;
   eventType: string;
   payload: Record<string, unknown>;
-}): Promise<{ duplicate: boolean; eventId: string | null }> {
+}): Promise<{
+  duplicate: boolean;
+  eventId: string | null;
+  existingStatus: SyncEventStatus | null;
+}> {
   requireDatabaseConfigured();
 
   try {
@@ -550,10 +524,23 @@ export async function beginResendWebhookEvent(input: {
       providerEventId: input.providerEventId,
       payload: input.payload,
     });
-    return { duplicate: false, eventId };
+    return { duplicate: false, eventId, existingStatus: null };
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { duplicate: true, eventId: null };
+      const existingEvent = await getSyncEventByProviderEventId(
+        input.providerEventId,
+      );
+      if (!existingEvent) {
+        throw new Error("Existing subscriber sync event could not be loaded.", {
+          cause: error,
+        });
+      }
+
+      return {
+        duplicate: true,
+        eventId: existingEvent.id,
+        existingStatus: existingEvent.status,
+      };
     }
     throw error;
   }
@@ -619,30 +606,56 @@ export async function syncPendingSubscribers(
     try {
       const resendContactId = await syncSubscriberToResend(subscriber);
       await markSubscriberSyncSuccess(subscriber.id, resendContactId);
-      await insertSyncEvent({
-        subscriberId: subscriber.id,
-        direction: "outbound",
-        eventType: "contact.sync",
-        status: "success",
-        payload: {
-          resendContactId,
-          status: subscriber.status,
-        },
-      });
+
+      try {
+        await insertSyncEvent({
+          subscriberId: subscriber.id,
+          direction: "outbound",
+          eventType: "contact.sync",
+          status: "success",
+          payload: {
+            resendContactId,
+            status: subscriber.status,
+          },
+        });
+      } catch (auditError) {
+        console.error("Failed to record newsletter sync success event", {
+          subscriberId: subscriber.id,
+          error: errorMessage(auditError),
+        });
+      }
+
       summary.succeeded += 1;
     } catch (error) {
       const message = errorMessage(error);
-      await markSubscriberSyncFailure(subscriber.id, message);
-      await insertSyncEvent({
-        subscriberId: subscriber.id,
-        direction: "outbound",
-        eventType: "contact.sync",
-        status: "failed",
-        errorMessage: message,
-        payload: {
-          status: subscriber.status,
-        },
-      });
+
+      try {
+        await markSubscriberSyncFailure(subscriber.id, message);
+      } catch (markError) {
+        console.error("Failed to persist newsletter sync failure", {
+          subscriberId: subscriber.id,
+          error: errorMessage(markError),
+        });
+      }
+
+      try {
+        await insertSyncEvent({
+          subscriberId: subscriber.id,
+          direction: "outbound",
+          eventType: "contact.sync",
+          status: "failed",
+          errorMessage: message,
+          payload: {
+            status: subscriber.status,
+          },
+        });
+      } catch (auditError) {
+        console.error("Failed to record newsletter sync failure event", {
+          subscriberId: subscriber.id,
+          error: errorMessage(auditError),
+        });
+      }
+
       summary.failed += 1;
       summary.failures.push({
         email: subscriber.email,

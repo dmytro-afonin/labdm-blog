@@ -69,7 +69,11 @@ interface Props {
 const { title, message } = Astro.props;
 ---
 
-<BaseLayout title={title} canonicalPath={`/newsletter/${Astro.params.state}`}>
+<BaseLayout
+  title={title}
+  canonicalPath={`/newsletter/${Astro.params.state}`}
+  noIndex
+>
   <main>
     <h1>{title}</h1>
     <p>{message}</p>

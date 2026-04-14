@@ -2,17 +2,28 @@ import { neon } from "@neondatabase/serverless";
 
 let sql: ReturnType<typeof neon> | null = null;
 
+function getPostgresUrl(): string | null {
+  const value = process.env.POSTGRES_URL;
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const url = value.trim();
+  return url ? url : null;
+}
+
 export function getNeonSql(): ReturnType<typeof neon> {
   if (sql) return sql;
-  const url = process.env.POSTGRES_URL;
-  if (!url || typeof url !== "string") {
+
+  const url = getPostgresUrl();
+  if (!url) {
     throw new Error("POSTGRES_URL is not configured.");
   }
+
   sql = neon(url);
   return sql;
 }
 
 export function isDatabaseConfigured(): boolean {
-  const url = process.env.POSTGRES_URL;
-  return typeof url === "string" && url.length > 0;
+  return getPostgresUrl() !== null;
 }
