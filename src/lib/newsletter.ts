@@ -21,6 +21,8 @@ const defaultSyncLimit = 25;
 const maxSyncErrorLength = 1000;
 const newsletterVerificationFromName = "labdm blog";
 const verificationEmailCooldownMs = 5 * 60 * 1000;
+/** Matches `verificationEmailCooldownMs` for SQL `interval` comparisons. */
+const verificationEmailCooldownSeconds = verificationEmailCooldownMs / 1000;
 const SUBSCRIBER_COLUMNS = `
   id,
   email,
@@ -435,17 +437,31 @@ async function prepareSubscriberForVerificationEmail(
   return subscriber;
 }
 
-async function markSubscriberVerificationEmailSent(
+/**
+ * Atomically reserves the right to send a verification email: sets
+ * `verification_email_sent_at` only when the cooldown allows, so concurrent
+ * requests cannot both pass. Returns true if this call won the reservation.
+ */
+async function reserveVerificationEmailSendAttempt(
   subscriberId: string,
-): Promise<void> {
+): Promise<boolean> {
   const sql = getNeonSql();
-  await sql`
+  const rows = (await sql`
     UPDATE subscribers
     SET
       verification_email_sent_at = now(),
       updated_at = now()
     WHERE id = ${subscriberId}
-  `;
+      AND verified_at IS NULL
+      AND (
+        verification_email_sent_at IS NULL
+        OR verification_email_sent_at
+          < now() - (${verificationEmailCooldownSeconds} * interval '1 second')
+      )
+    RETURNING id
+  `) as Array<{ id: string }>;
+
+  return rows.length > 0;
 }
 
 async function sendNewsletterVerificationEmail(
@@ -467,7 +483,6 @@ async function sendNewsletterVerificationEmail(
     html: emailContent.html,
     text: emailContent.text,
   });
-  await markSubscriberVerificationEmailSent(subscriber.id);
 }
 
 async function maybeSendNewsletterVerificationEmail(
@@ -477,6 +492,11 @@ async function maybeSendNewsletterVerificationEmail(
   >,
 ): Promise<void> {
   if (!shouldSendVerificationEmail(subscriber)) {
+    return;
+  }
+
+  const reserved = await reserveVerificationEmailSendAttempt(subscriber.id);
+  if (!reserved) {
     return;
   }
 
