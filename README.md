@@ -45,23 +45,24 @@ Environment variables:
 
 Current subscriber flows:
 
-- `POST /api/subscribe` captures or re-subscribes a local subscriber record.
+- `POST /api/subscribe` captures or re-subscribes a local subscriber record
+  and immediately syncs that subscriber to Resend Contacts.
 - `/newsletter/manage/[token]` lets a subscriber unsubscribe or re-subscribe
   via a signed management link.
 - `bun run newsletter:sync` manually pushes pending or failed subscriber rows
   to Resend Contacts.
 - `bun run newsletter:sync:report` prints current sync counts and failed rows.
-- `POST /api/resend/webhook` reconciles Resend `contact.created`,
+- `POST /api/webhooks/resend/contacts` reconciles Resend `contact.created`,
   `contact.updated`, and `contact.deleted` events back into Neon.
 
 Recommended Resend setup:
 
-1. Add a webhook in Resend pointing at `/api/resend/webhook`.
+1. Add a webhook in Resend pointing at `/api/webhooks/resend/contacts`.
 2. Subscribe that webhook to `contact.created`, `contact.updated`, and
    `contact.deleted`.
 3. Store the webhook signing secret in `RESEND_WEBHOOK_SECRET`.
-4. Run `bun run newsletter:sync` after local subscriber changes or whenever
-   `newsletter:sync:report` shows failed rows.
+4. Use `bun run newsletter:sync` only for retries or backlog cleanup when
+   `newsletter:sync:report` shows failed or pending rows.
 
 ## Deployment flow
 

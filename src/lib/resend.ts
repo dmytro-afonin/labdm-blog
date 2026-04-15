@@ -236,7 +236,7 @@ function getRequiredHeader(headers: Headers, name: string): string {
   return value.trim();
 }
 
-export function verifyResendWebhook(
+export function verifyResendContactWebhook(
   payload: string,
   headers: Headers,
 ): ResendContactWebhookEvent {
@@ -262,7 +262,7 @@ export function verifyResendWebhook(
     candidate.type !== "contact.updated" &&
     candidate.type !== "contact.deleted"
   ) {
-    throw new Error("Unsupported Resend webhook type.");
+    throw new Error("Unsupported Resend contact webhook type.");
   }
 
   if (!candidate.data || typeof candidate.data !== "object") {

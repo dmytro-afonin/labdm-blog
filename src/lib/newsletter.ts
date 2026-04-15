@@ -317,9 +317,22 @@ export async function subscribeNewsletterEmail(
   `) as Array<{ result: NewsletterSubscriptionResult }>;
 
   const result = rows[0]?.result;
+  const subscriber = await getSubscriberByEmail(email);
+  if (!subscriber) {
+    throw new Error("Subscriber could not be loaded after subscribe.");
+  }
+
   if (!result) {
+    if (
+      subscriber.syncStatus !== "synced" ||
+      subscriber.resendContactId === null
+    ) {
+      await syncSubscriberNow(subscriber);
+    }
     return "already-subscribed";
   }
+
+  await syncSubscriberNow(subscriber);
 
   return result;
 }
@@ -504,7 +517,7 @@ async function getSyncEventByProviderEventId(
   return rows[0] ?? null;
 }
 
-export async function beginResendWebhookEvent(input: {
+export async function beginResendContactWebhookEvent(input: {
   providerEventId: string;
   eventType: string;
   payload: Record<string, unknown>;
@@ -546,7 +559,7 @@ export async function beginResendWebhookEvent(input: {
   }
 }
 
-export async function finishResendWebhookEvent(input: {
+export async function finishResendContactWebhookEvent(input: {
   eventId: string;
   subscriberId: string | null;
   status: "success" | "failed" | "ignored";
@@ -589,6 +602,66 @@ async function syncSubscriberToResend(
   return updated.id;
 }
 
+async function syncSubscriberNow(
+  subscriber: NewsletterSubscriber,
+): Promise<string> {
+  try {
+    const resendContactId = await syncSubscriberToResend(subscriber);
+    await markSubscriberSyncSuccess(subscriber.id, resendContactId);
+
+    try {
+      await insertSyncEvent({
+        subscriberId: subscriber.id,
+        direction: "outbound",
+        eventType: "contact.sync",
+        status: "success",
+        payload: {
+          resendContactId,
+          status: subscriber.status,
+        },
+      });
+    } catch (auditError) {
+      console.error("Failed to record newsletter sync success event", {
+        subscriberId: subscriber.id,
+        error: errorMessage(auditError),
+      });
+    }
+
+    return resendContactId;
+  } catch (error) {
+    const message = errorMessage(error);
+
+    try {
+      await markSubscriberSyncFailure(subscriber.id, message);
+    } catch (markError) {
+      console.error("Failed to persist newsletter sync failure", {
+        subscriberId: subscriber.id,
+        error: errorMessage(markError),
+      });
+    }
+
+    try {
+      await insertSyncEvent({
+        subscriberId: subscriber.id,
+        direction: "outbound",
+        eventType: "contact.sync",
+        status: "failed",
+        errorMessage: message,
+        payload: {
+          status: subscriber.status,
+        },
+      });
+    } catch (auditError) {
+      console.error("Failed to record newsletter sync failure event", {
+        subscriberId: subscriber.id,
+        error: errorMessage(auditError),
+      });
+    }
+
+    throw error;
+  }
+}
+
 export async function syncPendingSubscribers(
   limit = defaultSyncLimit,
 ): Promise<NewsletterSyncSummary> {
@@ -604,58 +677,10 @@ export async function syncPendingSubscribers(
 
   for (const subscriber of subscribers) {
     try {
-      const resendContactId = await syncSubscriberToResend(subscriber);
-      await markSubscriberSyncSuccess(subscriber.id, resendContactId);
-
-      try {
-        await insertSyncEvent({
-          subscriberId: subscriber.id,
-          direction: "outbound",
-          eventType: "contact.sync",
-          status: "success",
-          payload: {
-            resendContactId,
-            status: subscriber.status,
-          },
-        });
-      } catch (auditError) {
-        console.error("Failed to record newsletter sync success event", {
-          subscriberId: subscriber.id,
-          error: errorMessage(auditError),
-        });
-      }
-
+      await syncSubscriberNow(subscriber);
       summary.succeeded += 1;
     } catch (error) {
       const message = errorMessage(error);
-
-      try {
-        await markSubscriberSyncFailure(subscriber.id, message);
-      } catch (markError) {
-        console.error("Failed to persist newsletter sync failure", {
-          subscriberId: subscriber.id,
-          error: errorMessage(markError),
-        });
-      }
-
-      try {
-        await insertSyncEvent({
-          subscriberId: subscriber.id,
-          direction: "outbound",
-          eventType: "contact.sync",
-          status: "failed",
-          errorMessage: message,
-          payload: {
-            status: subscriber.status,
-          },
-        });
-      } catch (auditError) {
-        console.error("Failed to record newsletter sync failure event", {
-          subscriberId: subscriber.id,
-          error: errorMessage(auditError),
-        });
-      }
-
       summary.failed += 1;
       summary.failures.push({
         email: subscriber.email,
@@ -667,7 +692,7 @@ export async function syncPendingSubscribers(
   return summary;
 }
 
-async function findSubscriberForWebhook(
+async function findSubscriberForResendContactWebhook(
   event: ResendContactWebhookEvent,
 ): Promise<NewsletterSubscriber | null> {
   if (event.data.id) {
@@ -682,7 +707,7 @@ async function findSubscriberForWebhook(
   return null;
 }
 
-export async function applyResendWebhookEvent(
+export async function applyResendContactWebhookEvent(
   event: ResendContactWebhookEvent,
 ): Promise<{
   subscriberId: string | null;
@@ -691,12 +716,12 @@ export async function applyResendWebhookEvent(
 }> {
   requireDatabaseConfigured();
 
-  const subscriber = await findSubscriberForWebhook(event);
+  const subscriber = await findSubscriberForResendContactWebhook(event);
   if (!subscriber) {
     return {
       subscriberId: null,
       status: "ignored",
-      message: "No matching subscriber found for webhook event.",
+      message: "No matching subscriber found for Resend contact webhook event.",
     };
   }
 

@@ -1,11 +1,11 @@
 import type { APIRoute } from "astro";
 
 import {
-  applyResendWebhookEvent,
-  beginResendWebhookEvent,
-  finishResendWebhookEvent,
-} from "../../../lib/newsletter";
-import { verifyResendWebhook } from "../../../lib/resend";
+  applyResendContactWebhookEvent,
+  beginResendContactWebhookEvent,
+  finishResendContactWebhookEvent,
+} from "../../../../lib/newsletter";
+import { verifyResendContactWebhook } from "../../../../lib/resend";
 
 export const prerender = false;
 
@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   let event;
   try {
-    event = verifyResendWebhook(payload, request.headers);
+    event = verifyResendContactWebhook(payload, request.headers);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Invalid webhook signature.";
@@ -26,7 +26,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response("Missing svix-id header.", { status: 400 });
   }
 
-  const begun = await beginResendWebhookEvent({
+  const begun = await beginResendContactWebhookEvent({
     providerEventId,
     eventType: event.type,
     payload: event as unknown as Record<string, unknown>,
@@ -46,8 +46,8 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    const result = await applyResendWebhookEvent(event);
-    await finishResendWebhookEvent({
+    const result = await applyResendContactWebhookEvent(event);
+    await finishResendContactWebhookEvent({
       eventId: begun.eventId,
       subscriberId: result.subscriberId,
       status: result.status,
@@ -58,16 +58,19 @@ export const POST: APIRoute = async ({ request }) => {
     const message =
       error instanceof Error ? error.message : "Webhook processing failed.";
     try {
-      await finishResendWebhookEvent({
+      await finishResendContactWebhookEvent({
         eventId: begun.eventId,
         subscriberId: null,
         status: "failed",
         errorMessage: message,
       });
     } catch (finishError) {
-      console.error("Failed to persist Resend webhook failure", finishError);
+      console.error(
+        "Failed to persist Resend contact webhook failure",
+        finishError,
+      );
     }
-    console.error("Resend webhook processing failed", {
+    console.error("Resend contact webhook processing failed", {
       eventId: begun.eventId,
       error: message,
     });
