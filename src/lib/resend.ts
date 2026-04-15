@@ -1,7 +1,7 @@
 import { Webhook } from "svix";
 
 const RESEND_API_BASE_URL = "https://api.resend.com";
-const RESEND_USER_AGENT = "labdm-blog/newsletter-sync";
+const RESEND_USER_AGENT = "labdm-blog/newsletter";
 
 export interface ResendContact {
   id: string;
@@ -11,6 +11,10 @@ export interface ResendContact {
 }
 
 export interface ResendContactMutationResult {
+  id: string;
+}
+
+export interface ResendEmailSendResult {
   id: string;
 }
 
@@ -44,6 +48,18 @@ function getRequiredEnv(name: "RESEND_WEBHOOK_SECRET"): string {
     throw new Error(`${name} is not configured.`);
   }
   return value.trim();
+}
+
+function getResendEmailApiKey(): string {
+  const sendOnly = process.env.RESEND_API_KEY?.trim();
+  if (sendOnly) return sendOnly;
+
+  const fullAccess = process.env.RESEND_CONTACTS_API_KEY?.trim();
+  if (fullAccess) return fullAccess;
+
+  throw new Error(
+    "RESEND_API_KEY or RESEND_CONTACTS_API_KEY must be configured for Resend email sending.",
+  );
 }
 
 /**
@@ -120,9 +136,9 @@ function mapMutationResult(value: unknown): ResendContactMutationResult {
 
 async function resendRequest<T>(
   path: string,
+  apiKey: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const apiKey = getResendContactsApiKey();
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${apiKey}`);
   headers.set("Accept", "application/json");
@@ -178,6 +194,7 @@ export async function getResendContact(input: {
   try {
     const payload = await resendRequest<unknown>(
       `/contacts/${encodeURIComponent(identifier)}`,
+      getResendContactsApiKey(),
       { method: "GET" },
     );
     return mapResendContact(payload);
@@ -193,13 +210,17 @@ export async function createResendContact(input: {
   email: string;
   unsubscribed: boolean;
 }): Promise<ResendContactMutationResult> {
-  const payload = await resendRequest<unknown>("/contacts", {
-    method: "POST",
-    body: JSON.stringify({
-      email: input.email,
-      unsubscribed: input.unsubscribed,
-    }),
-  });
+  const payload = await resendRequest<unknown>(
+    "/contacts",
+    getResendContactsApiKey(),
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email: input.email,
+        unsubscribed: input.unsubscribed,
+      }),
+    },
+  );
 
   return mapMutationResult(payload);
 }
@@ -217,10 +238,36 @@ export async function updateResendContact(input: {
 
   const payload = await resendRequest<unknown>(
     `/contacts/${encodeURIComponent(identifier)}`,
+    getResendContactsApiKey(),
     {
       method: "PATCH",
       body: JSON.stringify({
         unsubscribed: input.unsubscribed,
+      }),
+    },
+  );
+
+  return mapMutationResult(payload);
+}
+
+export async function sendResendEmail(input: {
+  from: string;
+  to: string | string[];
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<ResendEmailSendResult> {
+  const payload = await resendRequest<unknown>(
+    "/emails",
+    getResendEmailApiKey(),
+    {
+      method: "POST",
+      body: JSON.stringify({
+        from: input.from,
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
       }),
     },
   );

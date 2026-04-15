@@ -2,17 +2,25 @@ import {
   buildNewsletterManageUrl,
   verifyNewsletterManageToken,
 } from "./newsletter-manage-token";
+import {
+  buildNewsletterVerificationUrl,
+  verifyNewsletterVerificationToken,
+} from "./newsletter-verification-token";
 import { getNeonSql, isDatabaseConfigured } from "./neon";
 import {
   createResendContact,
   getResendContact,
+  sendResendEmail,
   updateResendContact,
   type ResendContactWebhookEvent,
 } from "./resend";
+import { siteConfig } from "../config/site";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const defaultSyncLimit = 25;
 const maxSyncErrorLength = 1000;
+const newsletterVerificationFromName = "labdm blog";
+const verificationEmailCooldownMs = 5 * 60 * 1000;
 const SUBSCRIBER_COLUMNS = `
   id,
   email,
@@ -20,6 +28,8 @@ const SUBSCRIBER_COLUMNS = `
   status,
   sync_status,
   resend_contact_id,
+  verified_at,
+  verification_email_sent_at,
   created_at,
   subscribed_at,
   updated_at,
@@ -35,9 +45,10 @@ export type NewsletterSubscriberStatus = "subscribed" | "unsubscribed";
 export type NewsletterSyncStatus = "pending" | "synced" | "failed";
 export type NewsletterManageAction = "unsubscribe" | "resubscribe";
 export type NewsletterSubscriptionResult =
-  | "subscribed"
+  | "check-inbox"
   | "already-subscribed"
   | "resubscribed";
+export type NewsletterConfirmationResult = "confirmed" | "invalid" | "expired";
 export type NewsletterManageResult =
   | "invalid"
   | "unsubscribed"
@@ -50,6 +61,8 @@ interface SubscriberRow {
   status: NewsletterSubscriberStatus;
   sync_status: NewsletterSyncStatus;
   resend_contact_id: string | null;
+  verified_at: string | null;
+  verification_email_sent_at: string | null;
   created_at: string;
   subscribed_at: string;
   updated_at: string;
@@ -63,6 +76,7 @@ interface SubscriberRow {
 
 interface SyncCountsRow {
   total_count: number;
+  unverified_count: number;
   pending_count: number;
   synced_count: number;
   failed_count: number;
@@ -95,6 +109,8 @@ export interface NewsletterSubscriber {
   status: NewsletterSubscriberStatus;
   syncStatus: NewsletterSyncStatus;
   resendContactId: string | null;
+  verifiedAt: string | null;
+  verificationEmailSentAt: string | null;
   createdAt: string;
   subscribedAt: string;
   updatedAt: string;
@@ -127,6 +143,7 @@ export interface NewsletterSyncSummary {
 export interface NewsletterSyncReport {
   counts: {
     total: number;
+    unverified: number;
     pending: number;
     synced: number;
     failed: number;
@@ -155,6 +172,8 @@ function mapSubscriber(row: SubscriberRow): NewsletterSubscriber {
     status: row.status,
     syncStatus: row.sync_status,
     resendContactId: row.resend_contact_id,
+    verifiedAt: row.verified_at,
+    verificationEmailSentAt: row.verification_email_sent_at,
     createdAt: row.created_at,
     subscribedAt: row.subscribed_at,
     updatedAt: row.updated_at,
@@ -184,6 +203,78 @@ export function normalizeNewsletterEmail(email: string): string {
 
 export function isValidNewsletterEmail(email: string): boolean {
   return emailPattern.test(email);
+}
+
+function isSubscriberVerified(
+  subscriber: Pick<NewsletterSubscriber, "verifiedAt">,
+): boolean {
+  return subscriber.verifiedAt !== null;
+}
+
+function shouldSendVerificationEmail(
+  subscriber: Pick<NewsletterSubscriber, "verificationEmailSentAt">,
+): boolean {
+  if (!subscriber.verificationEmailSentAt) {
+    return true;
+  }
+
+  const lastSentAt = Date.parse(subscriber.verificationEmailSentAt);
+  if (!Number.isFinite(lastSentAt)) {
+    return true;
+  }
+
+  return Date.now() - lastSentAt >= verificationEmailCooldownMs;
+}
+
+function getNewsletterVerificationFromEmail(): string {
+  const value = process.env.RESEND_FROM_EMAIL;
+  if (!value || !value.trim()) {
+    throw new Error("RESEND_FROM_EMAIL is not configured.");
+  }
+  return value.trim();
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderNewsletterVerificationEmail(input: {
+  email: string;
+  verificationUrl: string;
+}): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const safeEmail = escapeHtml(input.email);
+  const safeUrl = escapeHtml(input.verificationUrl);
+  const subject = `Confirm your subscription to ${siteConfig.name}`;
+  const text = [
+    `Hi,`,
+    ``,
+    `Please confirm that you want to subscribe ${input.email} to ${siteConfig.name}.`,
+    `Nothing will be added to the mailing list until you open this link:`,
+    input.verificationUrl,
+    ``,
+    `This confirmation link expires in 24 hours.`,
+  ].join("\n");
+
+  return {
+    subject,
+    text,
+    html: [
+      `<p>Hi,</p>`,
+      `<p>Please confirm that you want to subscribe <strong>${safeEmail}</strong> to ${escapeHtml(siteConfig.name)}.</p>`,
+      `<p>Nothing will be added to the mailing list until you open this link:</p>`,
+      `<p><a href="${safeUrl}">Confirm subscription</a></p>`,
+      `<p>This confirmation link expires in 24 hours.</p>`,
+    ].join(""),
+  };
 }
 
 async function querySingleSubscriber(
@@ -268,16 +359,9 @@ async function updateSubscriberStatus(
   return mapSubscriber(row);
 }
 
-export async function subscribeNewsletterEmail(
-  rawEmail: string,
-): Promise<NewsletterSubscriptionResult> {
-  requireDatabaseConfigured();
-
-  const email = normalizeNewsletterEmail(rawEmail);
-  if (!isValidNewsletterEmail(email)) {
-    throw new Error("Invalid newsletter email.");
-  }
-
+async function createSubscriberPendingVerification(
+  email: string,
+): Promise<NewsletterSubscriber> {
   const sql = getNeonSql();
   const rows = (await sql`
     INSERT INTO subscribers (
@@ -298,43 +382,172 @@ export async function subscribeNewsletterEmail(
       'pending',
       now()
     )
-    ON CONFLICT (email) DO UPDATE
+    RETURNING
+      ${sql.unsafe(SUBSCRIBER_COLUMNS)}
+  `) as SubscriberRow[];
+
+  const row = rows[0];
+  if (!row) {
+    throw new Error("Subscriber could not be created.");
+  }
+
+  return mapSubscriber(row);
+}
+
+async function prepareSubscriberForVerificationEmail(
+  subscriberId: string,
+): Promise<NewsletterSubscriber> {
+  const sql = getNeonSql();
+  const rows = (await sql`
+    UPDATE subscribers
     SET
       consent = true,
       status = 'subscribed',
       subscribed_at = now(),
-      updated_at = now(),
       unsubscribed_at = NULL,
+      updated_at = now(),
       sync_status = 'pending',
       sync_requested_at = now(),
       last_sync_error = NULL
-    WHERE subscribers.status = 'unsubscribed'
+    WHERE id = ${subscriberId}
+      AND verified_at IS NULL
     RETURNING
-      CASE
-        WHEN xmax = 0 THEN 'subscribed'
-        ELSE 'resubscribed'
-      END AS result
-  `) as Array<{ result: NewsletterSubscriptionResult }>;
+      ${sql.unsafe(SUBSCRIBER_COLUMNS)}
+  `) as SubscriberRow[];
 
-  const result = rows[0]?.result;
-  const subscriber = await getSubscriberByEmail(email);
-  if (!subscriber) {
-    throw new Error("Subscriber could not be loaded after subscribe.");
+  const row = rows[0];
+  if (!row) {
+    throw new Error("Subscriber could not be prepared for verification.");
   }
 
-  if (!result) {
-    if (
-      subscriber.syncStatus !== "synced" ||
-      subscriber.resendContactId === null
-    ) {
-      await syncSubscriberNow(subscriber);
-    }
-    return "already-subscribed";
+  return mapSubscriber(row);
+}
+
+async function markSubscriberVerificationEmailSent(
+  subscriberId: string,
+): Promise<void> {
+  const sql = getNeonSql();
+  await sql`
+    UPDATE subscribers
+    SET
+      verification_email_sent_at = now(),
+      updated_at = now()
+    WHERE id = ${subscriberId}
+  `;
+}
+
+async function sendNewsletterVerificationEmail(
+  subscriber: Pick<NewsletterSubscriber, "id" | "email">,
+): Promise<void> {
+  const verificationUrl = buildNewsletterVerificationUrl({
+    subscriberId: subscriber.id,
+    email: subscriber.email,
+  });
+  const emailContent = renderNewsletterVerificationEmail({
+    email: subscriber.email,
+    verificationUrl,
+  });
+
+  await sendResendEmail({
+    from: `${newsletterVerificationFromName} <${getNewsletterVerificationFromEmail()}>`,
+    to: subscriber.email,
+    subject: emailContent.subject,
+    html: emailContent.html,
+    text: emailContent.text,
+  });
+  await markSubscriberVerificationEmailSent(subscriber.id);
+}
+
+async function maybeSendNewsletterVerificationEmail(
+  subscriber: Pick<
+    NewsletterSubscriber,
+    "id" | "email" | "verificationEmailSentAt"
+  >,
+): Promise<void> {
+  if (!shouldSendVerificationEmail(subscriber)) {
+    return;
   }
 
-  await syncSubscriberNow(subscriber);
+  await sendNewsletterVerificationEmail(subscriber);
+}
 
-  return result;
+async function markSubscriberVerified(
+  subscriberId: string,
+): Promise<NewsletterSubscriber> {
+  const sql = getNeonSql();
+  const rows = (await sql`
+    UPDATE subscribers
+    SET
+      verified_at = COALESCE(verified_at, now()),
+      updated_at = now(),
+      sync_status = CASE
+        WHEN status = 'subscribed' THEN 'pending'
+        ELSE sync_status
+      END,
+      sync_requested_at = CASE
+        WHEN status = 'subscribed' THEN now()
+        ELSE sync_requested_at
+      END,
+      last_sync_error = CASE
+        WHEN status = 'subscribed' THEN NULL
+        ELSE last_sync_error
+      END
+    WHERE id = ${subscriberId}
+    RETURNING
+      ${sql.unsafe(SUBSCRIBER_COLUMNS)}
+  `) as SubscriberRow[];
+
+  const row = rows[0];
+  if (!row) {
+    throw new Error("Subscriber could not be marked verified.");
+  }
+
+  return mapSubscriber(row);
+}
+
+export async function subscribeNewsletterEmail(
+  rawEmail: string,
+): Promise<NewsletterSubscriptionResult> {
+  requireDatabaseConfigured();
+
+  const email = normalizeNewsletterEmail(rawEmail);
+  if (!isValidNewsletterEmail(email)) {
+    throw new Error("Invalid newsletter email.");
+  }
+
+  const existingSubscriber = await getSubscriberByEmail(email);
+
+  if (!existingSubscriber) {
+    const subscriber = await createSubscriberPendingVerification(email);
+    await maybeSendNewsletterVerificationEmail(subscriber);
+    return "check-inbox";
+  }
+
+  if (!isSubscriberVerified(existingSubscriber)) {
+    const subscriber = await prepareSubscriberForVerificationEmail(
+      existingSubscriber.id,
+    );
+    await maybeSendNewsletterVerificationEmail(subscriber);
+    return "check-inbox";
+  }
+
+  if (existingSubscriber.status === "unsubscribed") {
+    const subscriber = await updateSubscriberStatus(
+      existingSubscriber.id,
+      "subscribed",
+    );
+    await syncSubscriberNow(subscriber);
+    return "resubscribed";
+  }
+
+  if (
+    existingSubscriber.syncStatus !== "synced" ||
+    existingSubscriber.resendContactId === null
+  ) {
+    await syncSubscriberNow(existingSubscriber);
+  }
+
+  return "already-subscribed";
 }
 
 async function getSubscriberFromManageToken(
@@ -377,6 +590,44 @@ export async function getNewsletterManageView(
   };
 }
 
+export async function confirmNewsletterSubscription(
+  token: string,
+): Promise<NewsletterConfirmationResult> {
+  requireDatabaseConfigured();
+
+  const verification = verifyNewsletterVerificationToken(token);
+  if (verification.status === "invalid") {
+    return "invalid";
+  }
+  if (verification.status === "expired") {
+    return "expired";
+  }
+
+  const subscriber = await getSubscriberById(verification.payload.subscriberId);
+  if (!subscriber) {
+    return "invalid";
+  }
+  if (
+    subscriber.email !== normalizeNewsletterEmail(verification.payload.email)
+  ) {
+    return "invalid";
+  }
+
+  const verifiedSubscriber = isSubscriberVerified(subscriber)
+    ? subscriber
+    : await markSubscriberVerified(subscriber.id);
+
+  if (
+    verifiedSubscriber.status === "subscribed" &&
+    (verifiedSubscriber.syncStatus !== "synced" ||
+      verifiedSubscriber.resendContactId === null)
+  ) {
+    await syncSubscriberNow(verifiedSubscriber);
+  }
+
+  return "confirmed";
+}
+
 export async function performNewsletterManageAction(
   token: string,
   action: NewsletterManageAction,
@@ -405,7 +656,8 @@ async function listSubscribersNeedingSync(
     SELECT
       ${sql.unsafe(SUBSCRIBER_COLUMNS)}
     FROM subscribers
-    WHERE sync_status IN ('pending', 'failed')
+    WHERE verified_at IS NOT NULL
+      AND sync_status IN ('pending', 'failed')
     ORDER BY sync_requested_at ASC, created_at ASC
     LIMIT ${limit}
   `) as SubscriberRow[];
@@ -581,6 +833,12 @@ export async function finishResendContactWebhookEvent(input: {
 async function syncSubscriberToResend(
   subscriber: NewsletterSubscriber,
 ): Promise<string> {
+  if (!isSubscriberVerified(subscriber)) {
+    throw new Error(
+      "Subscriber email must be verified before syncing to Resend.",
+    );
+  }
+
   const contact =
     (subscriber.resendContactId
       ? await getResendContact({ id: subscriber.resendContactId })
@@ -724,6 +982,13 @@ export async function applyResendContactWebhookEvent(
       message: "No matching subscriber found for Resend contact webhook event.",
     };
   }
+  if (!isSubscriberVerified(subscriber)) {
+    return {
+      subscriberId: subscriber.id,
+      status: "ignored",
+      message: "Ignoring Resend contact webhook for an unverified subscriber.",
+    };
+  }
 
   const sql = getNeonSql();
 
@@ -786,9 +1051,16 @@ export async function getNewsletterSyncReport(
   const countRows = (await sql`
     SELECT
       COUNT(*)::int AS total_count,
-      COUNT(*) FILTER (WHERE sync_status = 'pending')::int AS pending_count,
-      COUNT(*) FILTER (WHERE sync_status = 'synced')::int AS synced_count,
-      COUNT(*) FILTER (WHERE sync_status = 'failed')::int AS failed_count
+      COUNT(*) FILTER (WHERE verified_at IS NULL)::int AS unverified_count,
+      COUNT(*) FILTER (
+        WHERE verified_at IS NOT NULL AND sync_status = 'pending'
+      )::int AS pending_count,
+      COUNT(*) FILTER (
+        WHERE verified_at IS NOT NULL AND sync_status = 'synced'
+      )::int AS synced_count,
+      COUNT(*) FILTER (
+        WHERE verified_at IS NOT NULL AND sync_status = 'failed'
+      )::int AS failed_count
     FROM subscribers
   `) as SyncCountsRow[];
 
@@ -801,13 +1073,15 @@ export async function getNewsletterSyncReport(
       sync_requested_at,
       last_synced_at
     FROM subscribers
-    WHERE sync_status = 'failed'
+    WHERE verified_at IS NOT NULL
+      AND sync_status = 'failed'
     ORDER BY sync_requested_at ASC, email ASC
     LIMIT ${limit}
   `) as FailedSyncRow[];
 
   const counts = countRows[0] ?? {
     total_count: 0,
+    unverified_count: 0,
     pending_count: 0,
     synced_count: 0,
     failed_count: 0,
@@ -816,6 +1090,7 @@ export async function getNewsletterSyncReport(
   return {
     counts: {
       total: counts.total_count,
+      unverified: counts.unverified_count,
       pending: counts.pending_count,
       synced: counts.synced_count,
       failed: counts.failed_count,

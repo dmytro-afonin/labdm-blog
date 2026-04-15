@@ -6,9 +6,17 @@ export function getStaticPaths() {
     {
       params: { state: "thanks" },
       props: {
-        title: "Subscribed",
+        title: "Check your inbox",
         message:
-          "Thanks — you're on the list. New posts will land in your inbox when they're published.",
+          "One more step: open the confirmation email to finish subscribing. Nothing is added until you verify the address.",
+      },
+    },
+    {
+      params: { state: "check-inbox" },
+      props: {
+        title: "Check your inbox",
+        message:
+          "We sent a confirmation link to that address. Open it to finish subscribing to new posts.",
       },
     },
     {
@@ -32,6 +40,30 @@ export function getStaticPaths() {
         title: "Something went wrong",
         message:
           "We couldn't save your subscription right now. Please try again in a moment.",
+      },
+    },
+    {
+      params: { state: "confirmed" },
+      props: {
+        title: "Subscription confirmed",
+        message:
+          "Your email is verified and you're now on the list for future posts.",
+      },
+    },
+    {
+      params: { state: "confirm-invalid" },
+      props: {
+        title: "Confirmation link invalid",
+        message:
+          "That confirmation link is invalid or no longer matches a pending subscriber record.",
+      },
+    },
+    {
+      params: { state: "confirm-expired" },
+      props: {
+        title: "Confirmation link expired",
+        message:
+          "That confirmation link has expired. Submit your email again and we'll send a fresh verification link.",
       },
     },
     {

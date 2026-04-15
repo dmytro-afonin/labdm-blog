@@ -38,20 +38,25 @@ source of truth for subscriber state.
 Environment variables:
 
 - `POSTGRES_URL`
-- `RESEND_API_KEY` — optional if you only sync contacts; may be a send-only key for outbound email
+- `RESEND_API_KEY` — send-capable Resend key for newsletter confirmation emails; may also be used for Contacts sync if it is full-access
 - `RESEND_CONTACTS_API_KEY` — full-access Resend key for the Contacts API (`newsletter:sync`). If omitted, `RESEND_API_KEY` is used and must not be send-only
+- `RESEND_FROM_EMAIL` — verified sender address for newsletter confirmation emails
 - `RESEND_WEBHOOK_SECRET`
 - `NEWSLETTER_TOKEN_SECRET`
 
 Current subscriber flows:
 
-- `POST /api/subscribe` captures or re-subscribes a local subscriber record
-  and immediately syncs that subscriber to Resend Contacts.
+- `POST /api/subscribe` creates or refreshes a local pending subscriber record
+  and sends a confirmation email. New signups are not synced to Resend Contacts
+  until the address is verified.
+- `GET /api/newsletter/confirm?token=...` verifies the email address and then
+  syncs the confirmed subscriber to Resend Contacts.
 - `/newsletter/manage/[token]` lets a subscriber unsubscribe or re-subscribe
   via a signed management link.
-- `bun run newsletter:sync` manually pushes pending or failed subscriber rows
-  to Resend Contacts.
-- `bun run newsletter:sync:report` prints current sync counts and failed rows.
+- `bun run newsletter:sync` manually pushes verified subscribers that are in a
+  pending sync state or that previously failed to sync to Resend Contacts.
+- `bun run newsletter:sync:report` prints sync counts, including unverified
+  local subscribers that are still waiting on email confirmation.
 - `POST /api/webhooks/resend/contacts` reconciles Resend `contact.created`,
   `contact.updated`, and `contact.deleted` events back into Neon.
 

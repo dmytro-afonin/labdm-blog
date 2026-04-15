@@ -21,6 +21,7 @@ try {
   const report = await getNewsletterSyncReport(parseLimit());
 
   console.log(`Subscribers: ${report.counts.total}`);
+  console.log(`Unverified: ${report.counts.unverified}`);
   console.log(`Pending sync: ${report.counts.pending}`);
   console.log(`Synced: ${report.counts.synced}`);
   console.log(`Failed: ${report.counts.failed}`);

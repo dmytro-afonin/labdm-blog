@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
   const honeypot = formData.get("company");
   if (typeof honeypot === "string" && honeypot.trim() !== "") {
-    return redirect("/newsletter/thanks");
+    return redirect("/newsletter/check-inbox");
   }
 
   const raw = formData.get("email");
@@ -41,13 +41,16 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
   try {
     const result = await subscribeNewsletterEmail(email);
+    if (result === "check-inbox") {
+      return redirect("/newsletter/check-inbox");
+    }
     if (result === "already-subscribed") {
       return redirect("/newsletter/already");
     }
     if (result === "resubscribed") {
       return redirect("/newsletter/resubscribed");
     }
-    return redirect("/newsletter/thanks");
+    return redirect("/newsletter/check-inbox");
   } catch {
     return redirect("/newsletter/error");
   }
