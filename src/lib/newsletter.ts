@@ -234,6 +234,13 @@ function getNewsletterVerificationFromEmail(): string {
   return value.trim();
 }
 
+/**
+ * Escape minimal HTML for newsletter verification emails only: addresses already
+ * validated by `emailPattern` and internally generated verification URLs.
+ * Ampersand is replaced first so literal `&` in input does not corrupt later
+ * escapes. If this ever handles arbitrary user content, prefer a dedicated
+ * library (e.g. `he`, `escape-html`).
+ */
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -416,11 +423,16 @@ async function prepareSubscriberForVerificationEmail(
   `) as SubscriberRow[];
 
   const row = rows[0];
-  if (!row) {
+  if (row) {
+    return mapSubscriber(row);
+  }
+
+  const subscriber = await getSubscriberById(subscriberId);
+  if (!subscriber) {
     throw new Error("Subscriber could not be prepared for verification.");
   }
 
-  return mapSubscriber(row);
+  return subscriber;
 }
 
 async function markSubscriberVerificationEmailSent(
@@ -527,6 +539,23 @@ export async function subscribeNewsletterEmail(
     const subscriber = await prepareSubscriberForVerificationEmail(
       existingSubscriber.id,
     );
+    if (isSubscriberVerified(subscriber)) {
+      if (subscriber.status === "unsubscribed") {
+        const updated = await updateSubscriberStatus(
+          subscriber.id,
+          "subscribed",
+        );
+        await syncSubscriberNow(updated);
+        return "resubscribed";
+      }
+      if (
+        subscriber.syncStatus !== "synced" ||
+        subscriber.resendContactId === null
+      ) {
+        await syncSubscriberNow(subscriber);
+      }
+      return "already-subscribed";
+    }
     await maybeSendNewsletterVerificationEmail(subscriber);
     return "check-inbox";
   }

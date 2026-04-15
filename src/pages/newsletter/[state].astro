@@ -4,14 +4,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 export function getStaticPaths() {
   return [
     {
-      params: { state: "thanks" },
-      props: {
-        title: "Check your inbox",
-        message:
-          "One more step: open the confirmation email to finish subscribing. Nothing is added until you verify the address.",
-      },
-    },
-    {
       params: { state: "check-inbox" },
       props: {
         title: "Check your inbox",

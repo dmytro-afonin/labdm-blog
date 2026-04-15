@@ -50,6 +50,8 @@ function getRequiredEnv(name: "RESEND_WEBHOOK_SECRET"): string {
   return value.trim();
 }
 
+// Prefer send-only `RESEND_API_KEY` for `/emails`; fall back to full-access
+// `RESEND_CONTACTS_API_KEY`. Inverse of `getResendContactsApiKey` (contacts first).
 function getResendEmailApiKey(): string {
   const sendOnly = process.env.RESEND_API_KEY?.trim();
   if (sendOnly) return sendOnly;
