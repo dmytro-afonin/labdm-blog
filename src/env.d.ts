@@ -10,6 +10,8 @@ interface ImportMetaEnv {
   readonly RESEND_API_KEY?: string;
   /** Full-access Resend API key for Contacts API (newsletter sync). Falls back to `RESEND_API_KEY` if unset. */
   readonly RESEND_CONTACTS_API_KEY?: string;
+  /** Verified sender address for newsletter confirmation emails. */
+  readonly RESEND_FROM_EMAIL?: string;
   /** Resend Svix secret used to verify contact webhook deliveries. */
   readonly RESEND_WEBHOOK_SECRET?: string;
   /** HMAC secret for tokenized newsletter management links. */
@@ -21,6 +23,7 @@ declare namespace NodeJS {
     POSTGRES_URL?: string;
     RESEND_API_KEY?: string;
     RESEND_CONTACTS_API_KEY?: string;
+    RESEND_FROM_EMAIL?: string;
     RESEND_WEBHOOK_SECRET?: string;
     NEWSLETTER_TOKEN_SECRET?: string;
   }
