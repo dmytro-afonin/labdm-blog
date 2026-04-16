@@ -12,35 +12,15 @@ function pick(...candidates: Array<string | undefined>): string | undefined {
   return undefined;
 }
 
-export function envPostgresUrl(): string | undefined {
-  return pick(import.meta.env.POSTGRES_URL, process.env.POSTGRES_URL);
+const metaEnv = import.meta.env as Record<string, string | undefined>;
+
+function envVar(name: string): () => string | undefined {
+  return () => pick(metaEnv[name], process.env[name]);
 }
 
-export function envNewsletterTokenSecret(): string | undefined {
-  return pick(
-    import.meta.env.NEWSLETTER_TOKEN_SECRET,
-    process.env.NEWSLETTER_TOKEN_SECRET,
-  );
-}
-
-export function envResendFromEmail(): string | undefined {
-  return pick(import.meta.env.RESEND_FROM_EMAIL, process.env.RESEND_FROM_EMAIL);
-}
-
-export function envResendWebhookSecret(): string | undefined {
-  return pick(
-    import.meta.env.RESEND_WEBHOOK_SECRET,
-    process.env.RESEND_WEBHOOK_SECRET,
-  );
-}
-
-export function envResendApiKey(): string | undefined {
-  return pick(import.meta.env.RESEND_API_KEY, process.env.RESEND_API_KEY);
-}
-
-export function envResendContactsApiKey(): string | undefined {
-  return pick(
-    import.meta.env.RESEND_CONTACTS_API_KEY,
-    process.env.RESEND_CONTACTS_API_KEY,
-  );
-}
+export const envPostgresUrl = envVar("POSTGRES_URL");
+export const envNewsletterTokenSecret = envVar("NEWSLETTER_TOKEN_SECRET");
+export const envResendFromEmail = envVar("RESEND_FROM_EMAIL");
+export const envResendWebhookSecret = envVar("RESEND_WEBHOOK_SECRET");
+export const envResendApiKey = envVar("RESEND_API_KEY");
+export const envResendContactsApiKey = envVar("RESEND_CONTACTS_API_KEY");

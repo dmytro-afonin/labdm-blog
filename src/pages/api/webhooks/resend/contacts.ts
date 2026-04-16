@@ -105,17 +105,13 @@ export const POST: APIRoute = async ({ request }) => {
         "Failed to persist Resend contact webhook failure",
         finishError,
       );
-      try {
-        await captureServerException({
-          error: finishError,
-          route: PH_ROUTE,
-          branch: "finishResendContactWebhookEvent_failed",
-          request,
-          extra: { event_id: begun.eventId },
-        });
-      } catch (phErr) {
-        console.warn("[posthog] webhook finish failure capture failed", phErr);
-      }
+      await captureServerException({
+        error: finishError,
+        route: PH_ROUTE,
+        branch: "finishResendContactWebhookEvent",
+        request,
+        extra: { event_id: begun.eventId },
+      });
     }
     console.error("Resend contact webhook processing failed", {
       eventId: begun.eventId,

@@ -10,10 +10,10 @@ export interface NewsletterManageTokenPayload {
 
 function getTokenSecret(): string {
   const value = envNewsletterTokenSecret();
-  if (!value || !value.trim()) {
+  if (!value) {
     throw new Error("NEWSLETTER_TOKEN_SECRET is not configured.");
   }
-  return value.trim();
+  return value;
 }
 
 function sign(value: string): string {

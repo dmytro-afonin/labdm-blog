@@ -3,6 +3,7 @@ import {
   isValidNewsletterEmail,
   normalizeNewsletterEmail,
   subscribeNewsletterEmail,
+  type NewsletterSubscriptionResult,
 } from "../../lib/newsletter";
 import { isDatabaseConfigured } from "../../lib/neon";
 import {
@@ -14,6 +15,12 @@ import {
 import { getPostHogServer } from "../../lib/posthog-server";
 
 const PH_ROUTE = "POST /api/subscribe";
+
+const SUBSCRIBE_RESULT_EVENTS = {
+  "check-inbox": "newsletter_subscribed",
+  "already-subscribed": "newsletter_subscribe_already_subscribed",
+  resubscribed: "newsletter_resubscribed",
+} as const satisfies Record<NewsletterSubscriptionResult, string>;
 
 export const prerender = false;
 
@@ -80,32 +87,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     if (isPostHogServerEnabled()) {
       try {
+        const eventName = SUBSCRIBE_RESULT_EVENTS[result];
         const posthog = getPostHogServer();
-        if (result === "check-inbox") {
-          await posthog.captureImmediate({
-            distinctId,
-            event: "newsletter_subscribed",
-            properties: { $session_id: sessionId },
-          });
-        } else if (result === "already-subscribed") {
-          await posthog.captureImmediate({
-            distinctId,
-            event: "newsletter_subscribe_already_subscribed",
-            properties: { $session_id: sessionId },
-          });
-        } else if (result === "resubscribed") {
-          await posthog.captureImmediate({
-            distinctId,
-            event: "newsletter_resubscribed",
-            properties: { $session_id: sessionId },
-          });
-        } else {
-          await posthog.captureImmediate({
-            distinctId,
-            event: "newsletter_subscribed",
-            properties: { $session_id: sessionId },
-          });
-        }
+        await posthog.captureImmediate({
+          distinctId,
+          event: eventName,
+          ...(sessionId ? { properties: { $session_id: sessionId } } : {}),
+        });
       } catch (phErr) {
         console.warn("[posthog] newsletter_subscribed capture failed", phErr);
       }

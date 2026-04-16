@@ -8,9 +8,7 @@ However, in the frontend of a [web](/docs/libraries/js/features.md#capturing-eve
 
 To link events to specific users, call `identify`:
 
-PostHog AI
-
-### Web
+## Web
 
 ```javascript
 posthog.identify(

@@ -9,6 +9,8 @@ import {
   captureServerException,
   captureServerOutcome,
   isPostHogServerEnabled,
+  posthogDistinctIdFromEmail,
+  POSTHOG_SERVER_DISTINCT_ID,
 } from "../../../lib/posthog-server-tracking";
 import { getPostHogServer } from "../../../lib/posthog-server";
 
@@ -76,27 +78,28 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   }
 
   try {
-    const result = await performNewsletterManageAction(token, action);
-    if (result === "invalid") {
+    const outcome = await performNewsletterManageAction(token, action);
+    if (outcome.status === "invalid") {
       await captureServerOutcome({
         route: PH_ROUTE,
         outcome: "manage_token_invalid",
         request,
-        distinctId: token,
       });
       return redirect("/newsletter/manage-invalid");
     }
+
     if (isPostHogServerEnabled()) {
       try {
         const posthog = getPostHogServer();
-        if (result === "unsubscribed") {
+        const distinctId = posthogDistinctIdFromEmail(outcome.email);
+        if (outcome.status === "unsubscribed") {
           await posthog.captureImmediate({
-            distinctId: token,
+            distinctId,
             event: "newsletter_unsubscribed",
           });
         } else {
           await posthog.captureImmediate({
-            distinctId: token,
+            distinctId,
             event: "newsletter_resubscribed_via_manage",
           });
         }
@@ -104,7 +107,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         console.warn("[posthog] newsletter manage capture failed", phErr);
       }
     }
-    if (result === "unsubscribed") {
+
+    if (outcome.status === "unsubscribed") {
       return redirect("/newsletter/unsubscribed");
     }
     return redirect("/newsletter/resubscribed");
@@ -114,7 +118,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       route: PH_ROUTE,
       branch: "performNewsletterManageAction",
       request,
-      distinctId: token,
+      distinctId: POSTHOG_SERVER_DISTINCT_ID,
     });
     return redirect("/newsletter/error");
   }

@@ -6,10 +6,18 @@ export function redirectUncached(
   pathOrUrl: string,
   request: Request,
 ): Response {
-  const target =
-    pathOrUrl.startsWith("https://") || pathOrUrl.startsWith("http://")
-      ? pathOrUrl
-      : new URL(pathOrUrl, new URL(request.url)).toString();
+  const baseUrl = request.url;
+
+  let target: string;
+  if (pathOrUrl.startsWith("https://") || pathOrUrl.startsWith("http://")) {
+    target = pathOrUrl;
+  } else if (pathOrUrl.startsWith("//") || pathOrUrl.startsWith("\\")) {
+    const origin = new URL(baseUrl).origin;
+    const asPath = `/${pathOrUrl.replace(/^[\\/]+/, "")}`;
+    target = new URL(asPath, `${origin}/`).toString();
+  } else {
+    target = new URL(pathOrUrl, baseUrl).toString();
+  }
 
   return new Response(null, {
     status: 302,

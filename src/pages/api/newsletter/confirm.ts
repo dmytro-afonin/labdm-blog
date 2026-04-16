@@ -7,6 +7,8 @@ import {
   captureServerException,
   captureServerOutcome,
   isPostHogServerEnabled,
+  posthogDistinctIdFromEmail,
+  POSTHOG_SERVER_DISTINCT_ID,
 } from "../../../lib/posthog-server-tracking";
 import { getPostHogServer } from "../../../lib/posthog-server";
 
@@ -36,28 +38,28 @@ export const GET: APIRoute = async ({ request }) => {
 
   try {
     const result = await confirmNewsletterSubscription(token);
-    if (result === "invalid") {
+    if (result.status === "invalid") {
       await captureServerOutcome({
         route: PH_ROUTE,
         outcome: "token_invalid",
         request,
-        distinctId: token,
+        distinctId: POSTHOG_SERVER_DISTINCT_ID,
       });
       return redirectUncached("/newsletter/confirm-invalid", request);
     }
-    if (result === "expired") {
+    if (result.status === "expired") {
       await captureServerOutcome({
         route: PH_ROUTE,
         outcome: "token_expired",
         request,
-        distinctId: token,
+        distinctId: POSTHOG_SERVER_DISTINCT_ID,
       });
       return redirectUncached("/newsletter/confirm-expired", request);
     }
     if (isPostHogServerEnabled()) {
       try {
         await getPostHogServer().captureImmediate({
-          distinctId: token,
+          distinctId: posthogDistinctIdFromEmail(result.email),
           event: "newsletter_confirmed",
         });
       } catch (phErr) {
@@ -71,7 +73,7 @@ export const GET: APIRoute = async ({ request }) => {
       route: PH_ROUTE,
       branch: "confirmNewsletterSubscription",
       request,
-      distinctId: token,
+      distinctId: POSTHOG_SERVER_DISTINCT_ID,
     });
     return redirectUncached("/newsletter/error", request);
   }

@@ -42,7 +42,7 @@ The example project shows the target implementation pattern. Consult the documen
 ## Framework guidelines
 
 - Always use the is:inline directive on PostHog script tags to prevent Astro from processing them and causing TypeScript errors
-- Use PUBLIC_ prefix for client-side environment variables in Astro (e.g., PUBLIC_POSTHOG_PROJECT_TOKEN)
+- Use `PUBLIC_` prefix for client-side environment variables in Astro (e.g., `PUBLIC_POSTHOG_PROJECT_TOKEN`)
 - Create a posthog.astro component in src/components/ for reusable initialization across pages
 - Import the PostHog component in a Layout and wrap all pages with that layout
 - Use posthog-node in API routes under src/pages/api/ for server-side event tracking

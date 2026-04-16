@@ -50,19 +50,19 @@ class ResendApiError extends Error {
 
 function requireResendWebhookSecret(): string {
   const value = envResendWebhookSecret();
-  if (!value || !value.trim()) {
+  if (!value) {
     throw new Error("RESEND_WEBHOOK_SECRET is not configured.");
   }
-  return value.trim();
+  return value;
 }
 
 // Prefer send-only `RESEND_API_KEY` for `/emails`; fall back to full-access
 // `RESEND_CONTACTS_API_KEY`. Inverse of `getResendContactsApiKey` (contacts first).
 function getResendEmailApiKey(): string {
-  const sendOnly = envResendApiKey()?.trim();
+  const sendOnly = envResendApiKey();
   if (sendOnly) return sendOnly;
 
-  const fullAccess = envResendContactsApiKey()?.trim();
+  const fullAccess = envResendContactsApiKey();
   if (fullAccess) return fullAccess;
 
   throw new Error(
@@ -75,9 +75,9 @@ function getResendEmailApiKey(): string {
  * here (`RESEND_CONTACTS_API_KEY`), or a single full-access `RESEND_API_KEY`.
  */
 function getResendContactsApiKey(): string {
-  const contacts = envResendContactsApiKey()?.trim();
+  const contacts = envResendContactsApiKey();
   if (contacts) return contacts;
-  const fallback = envResendApiKey()?.trim();
+  const fallback = envResendApiKey();
   if (fallback) return fallback;
   throw new Error(
     "RESEND_CONTACTS_API_KEY or RESEND_API_KEY must be configured for Resend Contacts API (newsletter sync). Send-only keys are not sufficient; use a full-access key or set RESEND_CONTACTS_API_KEY.",

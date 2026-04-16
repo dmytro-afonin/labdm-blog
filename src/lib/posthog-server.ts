@@ -22,3 +22,14 @@ export function getPostHogServer(): PostHog {
   }
   return posthogClient;
 }
+
+/**
+ * Flush and tear down the singleton PostHog client. Call at the end of
+ * serverless requests when using non-`captureImmediate` flows or background
+ * flush intervals so events are not lost between invocations.
+ */
+export async function shutdownPostHogServer(): Promise<void> {
+  if (!posthogClient) return;
+  await posthogClient.shutdown();
+  posthogClient = null;
+}

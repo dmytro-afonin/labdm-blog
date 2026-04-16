@@ -39,9 +39,9 @@
     const form = document.querySelector(".subscribe-form");
     if (!form) return;
     form.addEventListener("submit", function () {
-      if (window.posthog) {
-        window.posthog.capture("newsletter_subscribe_form_submitted");
-      }
+      window.posthog?.capture("newsletter_subscribe_form_submitted", {
+        send_instantly: true,
+      });
     });
   })();
 </script>

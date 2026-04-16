@@ -43,10 +43,10 @@ export async function captureServerOutcome(input: {
       distinctId: input.distinctId ?? POSTHOG_SERVER_DISTINCT_ID,
       event: "server_api_outcome",
       properties: {
+        ...input.properties,
         route: input.route,
         outcome: input.outcome,
         ...sessionProps(input.request),
-        ...input.properties,
       },
     });
   } catch (err) {
@@ -71,10 +71,10 @@ export async function captureServerException(input: {
       input.error,
       input.distinctId ?? POSTHOG_SERVER_DISTINCT_ID,
       {
+        ...input.extra,
         route: input.route,
         branch: input.branch,
         ...sessionProps(input.request),
-        ...input.extra,
       },
     );
   } catch (err) {
