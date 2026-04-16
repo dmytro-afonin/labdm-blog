@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { absoluteUrl } from "../config/site";
+import { envNewsletterTokenSecret } from "./server-env";
 
 export interface NewsletterManageTokenPayload {
   subscriberId: string;
@@ -8,11 +9,11 @@ export interface NewsletterManageTokenPayload {
 }
 
 function getTokenSecret(): string {
-  const value = process.env.NEWSLETTER_TOKEN_SECRET;
-  if (!value || !value.trim()) {
+  const value = envNewsletterTokenSecret();
+  if (!value) {
     throw new Error("NEWSLETTER_TOKEN_SECRET is not configured.");
   }
-  return value.trim();
+  return value;
 }
 
 function sign(value: string): string {

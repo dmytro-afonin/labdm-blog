@@ -1,15 +1,12 @@
 import { neon } from "@neondatabase/serverless";
 
+import { envPostgresUrl } from "./server-env";
+
 let sql: ReturnType<typeof neon> | null = null;
 
 function getPostgresUrl(): string | null {
-  const value = process.env.POSTGRES_URL;
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const url = value.trim();
-  return url ? url : null;
+  const url = envPostgresUrl();
+  return url ?? null;
 }
 
 export function getNeonSql(): ReturnType<typeof neon> {

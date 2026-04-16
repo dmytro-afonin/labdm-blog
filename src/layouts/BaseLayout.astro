@@ -3,6 +3,7 @@ import RssLink from "../components/RssLink.astro";
 import SocialLinks from "../components/SocialLinks.astro";
 import SubscribeForm from "../components/SubscribeForm.astro";
 import ThemeSwitcher from "../components/ThemeSwitcher.astro";
+import PostHog from "../components/posthog.astro";
 import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
 import { absoluteUrl, getPageTitle, siteConfig } from "../config/site";
 import "../styles/color-scheme-themes.scss";
@@ -79,6 +80,7 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
         }
       })();
     </script>
+    <PostHog />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{pageTitle}</title>

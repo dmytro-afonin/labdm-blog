@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { absoluteUrl } from "../config/site";
+import { envNewsletterTokenSecret } from "./server-env";
 
 const verificationTokenLifetimeMs = 24 * 60 * 60 * 1000;
 const verificationTokenPurpose = "newsletter-verification";
@@ -26,11 +27,11 @@ export type NewsletterVerificationTokenResult =
     };
 
 function getTokenSecret(): string {
-  const value = process.env.NEWSLETTER_TOKEN_SECRET;
-  if (!value || !value.trim()) {
+  const value = envNewsletterTokenSecret();
+  if (!value) {
     throw new Error("NEWSLETTER_TOKEN_SECRET is not configured.");
   }
-  return value.trim();
+  return value;
 }
 
 function sign(value: string): string {
@@ -112,7 +113,5 @@ export function buildNewsletterVerificationUrl(input: {
   email: string;
 }): string {
   const token = createNewsletterVerificationToken(input);
-  return absoluteUrl(
-    `/api/newsletter/confirm?token=${encodeURIComponent(token)}`,
-  );
+  return absoluteUrl(`/c?token=${encodeURIComponent(token)}`);
 }

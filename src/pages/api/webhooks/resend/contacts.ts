@@ -5,9 +5,15 @@ import {
   beginResendContactWebhookEvent,
   finishResendContactWebhookEvent,
 } from "../../../../lib/newsletter";
+import {
+  captureServerException,
+  captureServerOutcome,
+} from "../../../../lib/posthog-server-tracking";
 import { verifyResendContactWebhook } from "../../../../lib/resend";
 
 export const prerender = false;
+
+const PH_ROUTE = "POST /api/webhooks/resend/contacts";
 
 export const POST: APIRoute = async ({ request }) => {
   const payload = await request.text();
@@ -18,11 +24,22 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Invalid webhook signature.";
+    await captureServerOutcome({
+      route: PH_ROUTE,
+      outcome: "webhook_verification_failed",
+      request,
+      properties: { message },
+    });
     return new Response(message, { status: 400 });
   }
 
   const providerEventId = request.headers.get("svix-id");
   if (!providerEventId) {
+    await captureServerOutcome({
+      route: PH_ROUTE,
+      outcome: "missing_svix_id",
+      request,
+    });
     return new Response("Missing svix-id header.", { status: 400 });
   }
 
@@ -36,10 +53,22 @@ export const POST: APIRoute = async ({ request }) => {
     begun.duplicate &&
     (begun.existingStatus === "success" || begun.existingStatus === "ignored")
   ) {
+    await captureServerOutcome({
+      route: PH_ROUTE,
+      outcome: "duplicate_ignored",
+      request,
+      properties: { existing_status: begun.existingStatus },
+    });
     return Response.json({ ok: true, duplicate: true });
   }
 
   if (!begun.eventId) {
+    await captureServerOutcome({
+      route: PH_ROUTE,
+      outcome: "reservation_failed",
+      request,
+      properties: { duplicate: begun.duplicate },
+    });
     return new Response("Webhook event could not be reserved.", {
       status: 500,
     });
@@ -57,6 +86,13 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Webhook processing failed.";
+    await captureServerException({
+      error,
+      route: PH_ROUTE,
+      branch: "applyResendContactWebhookEvent",
+      request,
+      extra: { event_id: begun.eventId },
+    });
     try {
       await finishResendContactWebhookEvent({
         eventId: begun.eventId,
@@ -69,6 +105,13 @@ export const POST: APIRoute = async ({ request }) => {
         "Failed to persist Resend contact webhook failure",
         finishError,
       );
+      await captureServerException({
+        error: finishError,
+        route: PH_ROUTE,
+        branch: "finishResendContactWebhookEvent",
+        request,
+        extra: { event_id: begun.eventId },
+      });
     }
     console.error("Resend contact webhook processing failed", {
       eventId: begun.eventId,

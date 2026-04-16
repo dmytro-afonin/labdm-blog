@@ -7,6 +7,7 @@ import {
   verifyNewsletterVerificationToken,
 } from "./newsletter-verification-token";
 import { getNeonSql, isDatabaseConfigured } from "./neon";
+import { envResendFromEmail } from "./server-env";
 import {
   createResendContact,
   getResendContact,
@@ -50,11 +51,15 @@ export type NewsletterSubscriptionResult =
   | "check-inbox"
   | "already-subscribed"
   | "resubscribed";
-export type NewsletterConfirmationResult = "confirmed" | "invalid" | "expired";
-export type NewsletterManageResult =
-  | "invalid"
-  | "unsubscribed"
-  | "resubscribed";
+export type NewsletterConfirmationResult =
+  | { status: "invalid" }
+  | { status: "expired" }
+  | { status: "confirmed"; email: string };
+
+export type NewsletterManageActionResult =
+  | { status: "invalid" }
+  | { status: "unsubscribed"; email: string }
+  | { status: "resubscribed"; email: string };
 
 interface SubscriberRow {
   id: string;
@@ -229,11 +234,11 @@ function shouldSendVerificationEmail(
 }
 
 function getNewsletterVerificationFromEmail(): string {
-  const value = process.env.RESEND_FROM_EMAIL;
-  if (!value || !value.trim()) {
+  const value = envResendFromEmail();
+  if (!value) {
     throw new Error("RESEND_FROM_EMAIL is not configured.");
   }
-  return value.trim();
+  return value;
 }
 
 /**
@@ -267,7 +272,7 @@ function renderNewsletterVerificationEmail(input: {
     `Hi,`,
     ``,
     `Please confirm that you want to subscribe ${input.email} to ${siteConfig.name}.`,
-    `Nothing will be added to the mailing list until you open this link:`,
+    `Nothing will be added to the mailing list until you copy this entire URL into your browser’s address bar and open it:`,
     input.verificationUrl,
     ``,
     `This confirmation link expires in 24 hours.`,
@@ -279,8 +284,9 @@ function renderNewsletterVerificationEmail(input: {
     html: [
       `<p>Hi,</p>`,
       `<p>Please confirm that you want to subscribe <strong>${safeEmail}</strong> to ${escapeHtml(siteConfig.name)}.</p>`,
-      `<p>Nothing will be added to the mailing list until you open this link:</p>`,
-      `<p><a href="${safeUrl}">Confirm subscription</a></p>`,
+      `<p>Nothing will be added to the mailing list until you confirm:</p>`,
+      `<p><a href="${safeUrl}" rel="noopener noreferrer" target="_blank">Confirm subscription</a></p>`,
+      `<p style="font-size:0.8125rem;line-height:1.45;word-break:break-word;overflow-wrap:anywhere;color:#555;">If the button does not work, copy this entire URL into your browser’s address bar:<br /><span style="user-select:all">${safeUrl}</span></p>`,
       `<p>This confirmation link expires in 24 hours.</p>`,
     ].join(""),
   };
@@ -646,20 +652,20 @@ export async function confirmNewsletterSubscription(
 
   const verification = verifyNewsletterVerificationToken(token);
   if (verification.status === "invalid") {
-    return "invalid";
+    return { status: "invalid" };
   }
   if (verification.status === "expired") {
-    return "expired";
+    return { status: "expired" };
   }
 
   const subscriber = await getSubscriberById(verification.payload.subscriberId);
   if (!subscriber) {
-    return "invalid";
+    return { status: "invalid" };
   }
   if (
     subscriber.email !== normalizeNewsletterEmail(verification.payload.email)
   ) {
-    return "invalid";
+    return { status: "invalid" };
   }
 
   const verifiedSubscriber = isSubscriberVerified(subscriber)
@@ -674,27 +680,32 @@ export async function confirmNewsletterSubscription(
     await syncSubscriberNow(verifiedSubscriber);
   }
 
-  return "confirmed";
+  return {
+    status: "confirmed",
+    email: normalizeNewsletterEmail(verifiedSubscriber.email),
+  };
 }
 
 export async function performNewsletterManageAction(
   token: string,
   action: NewsletterManageAction,
-): Promise<NewsletterManageResult> {
+): Promise<NewsletterManageActionResult> {
   requireDatabaseConfigured();
 
   const subscriber = await getSubscriberFromManageToken(token);
   if (!subscriber) {
-    return "invalid";
+    return { status: "invalid" };
   }
+
+  const email = normalizeNewsletterEmail(subscriber.email);
 
   if (action === "unsubscribe") {
     await updateSubscriberStatus(subscriber.id, "unsubscribed");
-    return "unsubscribed";
+    return { status: "unsubscribed", email };
   }
 
   await updateSubscriberStatus(subscriber.id, "subscribed");
-  return "resubscribed";
+  return { status: "resubscribed", email };
 }
 
 async function listSubscribersNeedingSync(
