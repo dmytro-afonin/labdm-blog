@@ -1,5 +1,11 @@
 import { Webhook } from "svix";
 
+import {
+  envResendApiKey,
+  envResendContactsApiKey,
+  envResendWebhookSecret,
+} from "./server-env";
+
 const RESEND_API_BASE_URL = "https://api.resend.com";
 const RESEND_USER_AGENT = "labdm-blog/newsletter";
 
@@ -42,10 +48,10 @@ class ResendApiError extends Error {
   }
 }
 
-function getRequiredEnv(name: "RESEND_WEBHOOK_SECRET"): string {
-  const value = process.env[name];
+function requireResendWebhookSecret(): string {
+  const value = envResendWebhookSecret();
   if (!value || !value.trim()) {
-    throw new Error(`${name} is not configured.`);
+    throw new Error("RESEND_WEBHOOK_SECRET is not configured.");
   }
   return value.trim();
 }
@@ -53,10 +59,10 @@ function getRequiredEnv(name: "RESEND_WEBHOOK_SECRET"): string {
 // Prefer send-only `RESEND_API_KEY` for `/emails`; fall back to full-access
 // `RESEND_CONTACTS_API_KEY`. Inverse of `getResendContactsApiKey` (contacts first).
 function getResendEmailApiKey(): string {
-  const sendOnly = process.env.RESEND_API_KEY?.trim();
+  const sendOnly = envResendApiKey()?.trim();
   if (sendOnly) return sendOnly;
 
-  const fullAccess = process.env.RESEND_CONTACTS_API_KEY?.trim();
+  const fullAccess = envResendContactsApiKey()?.trim();
   if (fullAccess) return fullAccess;
 
   throw new Error(
@@ -69,9 +75,9 @@ function getResendEmailApiKey(): string {
  * here (`RESEND_CONTACTS_API_KEY`), or a single full-access `RESEND_API_KEY`.
  */
 function getResendContactsApiKey(): string {
-  const contacts = process.env.RESEND_CONTACTS_API_KEY?.trim();
+  const contacts = envResendContactsApiKey()?.trim();
   if (contacts) return contacts;
-  const fallback = process.env.RESEND_API_KEY?.trim();
+  const fallback = envResendApiKey()?.trim();
   if (fallback) return fallback;
   throw new Error(
     "RESEND_CONTACTS_API_KEY or RESEND_API_KEY must be configured for Resend Contacts API (newsletter sync). Send-only keys are not sufficient; use a full-access key or set RESEND_CONTACTS_API_KEY.",
@@ -289,7 +295,7 @@ export function verifyResendContactWebhook(
   payload: string,
   headers: Headers,
 ): ResendContactWebhookEvent {
-  const webhookSecret = getRequiredEnv("RESEND_WEBHOOK_SECRET");
+  const webhookSecret = requireResendWebhookSecret();
   const verified = new Webhook(webhookSecret).verify(payload, {
     "svix-id": getRequiredHeader(headers, "svix-id"),
     "svix-timestamp": getRequiredHeader(headers, "svix-timestamp"),

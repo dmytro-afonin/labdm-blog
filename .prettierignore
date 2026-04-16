@@ -2,3 +2,6 @@
 .vercel
 dist
 node_modules
+
+# PostHog wizard / Claude skill bundle (not maintained to repo Prettier rules)
+.claude/skills/integration-astro-hybrid/

@@ -49,8 +49,9 @@ Current subscriber flows:
 - `POST /api/subscribe` creates or refreshes a local pending subscriber record
   and sends a confirmation email. New signups are not synced to Resend Contacts
   until the address is verified.
-- `GET /api/newsletter/confirm?token=...` verifies the email address and then
-  syncs the confirmed subscriber to Resend Contacts.
+- `GET /c?token=...` (short link used in emails; redirects to the handler below)
+  verifies the email address; `GET /api/newsletter/confirm?token=...` is the same
+  handler and still works for older links. Confirmed subscribers sync to Resend Contacts.
 - `/newsletter/manage/[token]` lets a subscriber unsubscribe or re-subscribe
   via a signed management link.
 - `bun run newsletter:sync` manually pushes verified subscribers that are in a

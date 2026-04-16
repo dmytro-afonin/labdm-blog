@@ -7,6 +7,7 @@ import {
   verifyNewsletterVerificationToken,
 } from "./newsletter-verification-token";
 import { getNeonSql, isDatabaseConfigured } from "./neon";
+import { envResendFromEmail } from "./server-env";
 import {
   createResendContact,
   getResendContact,
@@ -229,7 +230,7 @@ function shouldSendVerificationEmail(
 }
 
 function getNewsletterVerificationFromEmail(): string {
-  const value = process.env.RESEND_FROM_EMAIL;
+  const value = envResendFromEmail();
   if (!value || !value.trim()) {
     throw new Error("RESEND_FROM_EMAIL is not configured.");
   }
@@ -267,7 +268,7 @@ function renderNewsletterVerificationEmail(input: {
     `Hi,`,
     ``,
     `Please confirm that you want to subscribe ${input.email} to ${siteConfig.name}.`,
-    `Nothing will be added to the mailing list until you open this link:`,
+    `Nothing will be added to the mailing list until you open this link (copy the whole line):`,
     input.verificationUrl,
     ``,
     `This confirmation link expires in 24 hours.`,
@@ -279,8 +280,9 @@ function renderNewsletterVerificationEmail(input: {
     html: [
       `<p>Hi,</p>`,
       `<p>Please confirm that you want to subscribe <strong>${safeEmail}</strong> to ${escapeHtml(siteConfig.name)}.</p>`,
-      `<p>Nothing will be added to the mailing list until you open this link:</p>`,
-      `<p><a href="${safeUrl}">Confirm subscription</a></p>`,
+      `<p>Nothing will be added to the mailing list until you confirm:</p>`,
+      `<p><a href="${safeUrl}" rel="noopener noreferrer" target="_blank">Confirm subscription</a></p>`,
+      `<p style="font-size:0.8125rem;line-height:1.45;word-break:break-word;overflow-wrap:anywhere;color:#555;">If the button does not work, copy this entire URL into Safari’s address bar:<br /><span style="user-select:all">${safeUrl}</span></p>`,
       `<p>This confirmation link expires in 24 hours.</p>`,
     ].join(""),
   };

@@ -1,5 +1,9 @@
 /// <reference types="astro/client" />
 
+/**
+ * Project env vars from `.env*`. Vite also merges built-ins on `import.meta.env`:
+ * `DEV`, `PROD`, `MODE`, `SSR`, `BASE_URL` (see Vite env docs).
+ */
 interface ImportMetaEnv {
   /** Neon connection string (server-only). */
   readonly POSTGRES_URL?: string;
@@ -16,6 +20,10 @@ interface ImportMetaEnv {
   readonly RESEND_WEBHOOK_SECRET?: string;
   /** HMAC secret for tokenized newsletter management links. */
   readonly NEWSLETTER_TOKEN_SECRET?: string;
+  /** PostHog project token (public, safe for client-side). */
+  readonly PUBLIC_POSTHOG_PROJECT_TOKEN?: string;
+  /** PostHog ingestion host. */
+  readonly PUBLIC_POSTHOG_HOST?: string;
 }
 
 declare namespace NodeJS {
