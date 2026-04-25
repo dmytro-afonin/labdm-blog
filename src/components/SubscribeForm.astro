@@ -34,25 +34,11 @@
   />
 </form>
 
-<script is:inline>
-  (function () {
-    const form = document.querySelector(".subscribe-form");
-    if (!form) return;
-    form.addEventListener("submit", function () {
-      window.posthog?.capture(
-        "newsletter_subscribe_form_submitted",
-        {},
-        { send_instantly: true },
-      );
-    });
-  })();
-</script>
-
 <style>
   .subscribe-form {
     position: relative;
     margin: 0;
-    min-width: min(100%, 18rem);
+    min-width: 0;
     flex: 0 1 auto;
     max-width: 22rem;
     width: 100%;

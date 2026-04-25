@@ -26,7 +26,7 @@ Useful scripts:
 
 - `bun run typecheck`
 - `bun run build`
-- `bun run preview`
+- `bun run build && bun run preview` — static server for `dist/client` (Vercel adapter output; run `build` first). Use `bun run dev` for API routes.
 - `bun run newsletter:sync`
 - `bun run newsletter:sync:report`
 

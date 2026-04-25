@@ -1,65 +1,43 @@
 ---
-import SocialIcon from "./SocialIcon.astro";
 import { getSocialLinkItems } from "../config/site";
 
 const items = getSocialLinkItems();
 ---
 
-<nav class="site-social" aria-label="Social profiles">
-  <ul class="site-social__list">
-    {
-      items.map((item) => (
-        <li class="site-social__li">
-          <a
-            class:list={["site-social__a", `site-social__a--${item.key}`]}
-            href={item.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={item.label}
-          >
-            <SocialIcon network={item.key} />
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+<nav class="site-footer-social" aria-label="Social profiles">
+  {
+    items.map((item) => (
+      <a
+        class="site-footer-social__a"
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {item.label}
+      </a>
+    ))
+  }
 </nav>
 
-<style is:global>
-  .site-social__list {
+<style>
+  .site-footer-social {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    list-style: none;
+    justify-content: center;
+    gap: 0.5rem 1.25rem;
     margin: 0;
     padding: 0;
-    gap: 0.35rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
 
-  .site-social .site-social__a {
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--mast-tool-height);
-    height: var(--mast-tool-height);
-    border-radius: var(--mast-tool-radius);
-    color: var(--social-accent);
+  .site-footer-social__a {
+    color: var(--accent);
     text-decoration: none;
-    border: 1px solid var(--social-line);
-    background: var(--social-surface);
-    transition:
-      color 0.15s ease,
-      border-color 0.15s ease,
-      background 0.15s ease;
   }
 
-  .site-social .site-social__a:hover {
-    color: var(--social-hover-fg);
-    border-color: var(--social-hover-line);
-  }
-
-  .site-social .social-icon {
-    display: block;
+  .site-footer-social__a:hover {
+    text-decoration: underline;
   }
 </style>

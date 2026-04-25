@@ -1,6 +1,5 @@
 /**
- * Theme color tokens — explicit `light` / `dark` via [data-color-scheme];
- * when omitted, `prefers-color-scheme` picks the palette (system).
+ * Appearance follows the OS only: `prefers-color-scheme` (no `data-color-scheme`, no client script).
  */
 
 @mixin labdm-theme-dark {
@@ -91,14 +90,6 @@
   );
 
   --code-bg: rgb(22 24 22 / 92%);
-
-  --theme-switch-border: rgb(255 255 255 / 12%);
-  --theme-switch-bg: rgb(0 0 0 / 12%);
-  --theme-switch-fg: rgb(200 198 192 / 90%);
-  --theme-switch-fg-hover: var(--color-accent);
-  --theme-switch-hover-bg: rgb(255 255 255 / 6%);
-  --theme-switch-active-fg: #f4f1ea;
-  --theme-switch-active-bg: rgb(201 168 106 / 22%);
 
   --social-accent: rgb(201 168 106 / 78%);
   --social-line: rgb(255 255 255 / 8%);
@@ -197,14 +188,6 @@
 
   --code-bg: rgb(244 241 234 / 96%);
 
-  --theme-switch-border: rgb(0 0 0 / 12%);
-  --theme-switch-bg: rgb(255 255 255 / 55%);
-  --theme-switch-fg: rgb(52 56 52 / 88%);
-  --theme-switch-fg-hover: #4a3a12;
-  --theme-switch-hover-bg: rgb(0 0 0 / 5%);
-  --theme-switch-active-fg: #1e221a;
-  --theme-switch-active-bg: rgb(201 168 106 / 28%);
-
   --social-accent: rgb(130 100 40 / 85%);
   --social-line: rgb(0 0 0 / 10%);
   --social-surface: rgb(255 255 255 / 65%);
@@ -212,22 +195,13 @@
   --social-hover-line: rgb(140 110 50 / 38%);
 }
 
-html[data-color-scheme="dark"] {
-  @include labdm-theme-dark;
-}
-
-html[data-color-scheme="light"] {
+/* Default: light, then OS dark preference */
+html {
   @include labdm-theme-light;
 }
 
 @media (prefers-color-scheme: dark) {
-  html:not([data-color-scheme]) {
+  html {
     @include labdm-theme-dark;
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  html:not([data-color-scheme]) {
-    @include labdm-theme-light;
   }
 }

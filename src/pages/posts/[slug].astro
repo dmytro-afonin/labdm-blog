@@ -84,16 +84,6 @@ const { Content } = await render(post);
   </main>
 </BaseLayout>
 
-<script
-  is:inline
-  define:vars={{ postSlug: post.id, postTitle: post.data.title }}
->
-  void window.posthog?.capture("post_viewed", {
-    post_slug: postSlug,
-    post_title: postTitle,
-  });
-</script>
-
 <style is:global>
   /* stylelint-disable no-descending-specificity -- .prose link patterns */
   .back-link {

@@ -2,9 +2,6 @@
 import RssLink from "../components/RssLink.astro";
 import SocialLinks from "../components/SocialLinks.astro";
 import SubscribeForm from "../components/SubscribeForm.astro";
-import ThemeSwitcher from "../components/ThemeSwitcher.astro";
-import PostHog from "../components/posthog.astro";
-import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
 import { absoluteUrl, getPageTitle, siteConfig } from "../config/site";
 import "../styles/color-scheme-themes.scss";
 
@@ -37,51 +34,19 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content={siteConfig.themeColor} />
-    <script is:inline define:vars={{ colorSchemeKey: COLOR_SCHEME_STORAGE_KEY }}
-    >
-      (function () {
-        function applyDataColorScheme(pref) {
-          if (pref === "light" || pref === "dark") {
-            document.documentElement.setAttribute("data-color-scheme", pref);
-          } else {
-            document.documentElement.removeAttribute("data-color-scheme");
-          }
-        }
-        function metaResolved(pref) {
-          if (pref === "light" || pref === "dark") return pref;
-          return window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-        }
-        try {
-          const raw = localStorage.getItem(colorSchemeKey);
-          const pref =
-            raw === "light" || raw === "dark" || raw === "system"
-              ? raw
-              : "system";
-          applyDataColorScheme(pref);
-          const meta = document.querySelector('meta[name="theme-color"]');
-          if (meta)
-            meta.setAttribute(
-              "content",
-              metaResolved(pref) === "light" ? "#ebe6dc" : "#353a34",
-            );
-        } catch {
-          document.documentElement.removeAttribute("data-color-scheme");
-          const meta = document.querySelector('meta[name="theme-color"]');
-          if (meta)
-            meta.setAttribute(
-              "content",
-              window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "#353a34"
-                : "#ebe6dc",
-            );
-        }
-      })();
-    </script>
-    <PostHog />
+    <meta
+      name="theme-color"
+      content="#ebe6dc"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#353a34"
+      media="(prefers-color-scheme: dark)"
+    />
     <meta name="generator" content={Astro.generator} />
+    <!-- Preload + same URL on rel=icon and mast <img> so one fetch can satisfy both; see fetchpriority on the img. -->
+    <link rel="preload" href="/favicon.svg" as="image" type="image/svg+xml" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
@@ -112,8 +77,8 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
     <style is:global>
       /*
        * Do not use `define:vars={palette}` here: Astro injects those as inline `style` on
-       * `html` / descendants, which overrides `html[data-color-scheme]` from this sheet and
-       * breaks light theme. Primitives from `src/config/palette.ts` live in `:root` below.
+       * `html` / descendants, which can override theme tokens from `color-scheme-themes.scss`.
+       * Primitives from `src/config/palette.ts` live in `:root` below.
        */
       /* stylelint-disable selector-class-pattern, no-descending-specificity -- BEM blocks */
       :root {
@@ -127,7 +92,7 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
         --radius-card: 1.35rem;
         --radius-pill: 0.35rem;
 
-        /** Mast: theme switcher, social chips, RSS — shared size + corner radius (matches cards / post pagination). */
+        /** Mast: RSS chip — size + corner radius (matches cards / post pagination). */
         --mast-tool-height: 2.35rem;
         --mast-tool-radius: var(--radius-card);
 
@@ -157,20 +122,30 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
         /* Fills iOS safe areas behind notch / home indicator (pairs with viewport-fit=cover). */
         background-color: var(--page-a);
         min-height: 100%;
+        min-height: 100dvh;
         min-height: -webkit-fill-available;
       }
 
       body {
         margin: 0;
+        display: flex;
+        flex-direction: column;
 
-        /* 100vh is taller than the visible viewport on mobile Safari → phantom scroll; dvh tracks the real viewport. */
-        min-height: 100vh;
+        /**
+         * Full viewport height: `dvh` for modern browsers. Do not also set
+         * `-webkit-fill-available` here — that duplicates `html` and can add
+         * extra scroll / wrong height in iOS Safari when combined with `100dvh`.
+         */
+        min-height: 100%;
         min-height: 100dvh;
-        min-height: -webkit-fill-available;
         font-family: var(--font-sans);
         color: var(--text);
         background-color: var(--page-a);
         line-height: 1.52;
+      }
+
+      body > header {
+        flex-shrink: 0;
       }
 
       @media (prefers-reduced-motion: no-preference) {
@@ -182,7 +157,7 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
         }
 
         /**
-         * Theme tokens on `html` (explicit attribute or `prefers-color-scheme` when omitted).
+         * Theme tokens on `html` from `color-scheme-themes.scss` (`prefers-color-scheme` only).
          */
         html body * {
           transition-property:
@@ -203,16 +178,11 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
       }
 
       main {
+        flex: 1 0 auto;
         width: min(56rem, calc(100% - 2rem));
         margin: 0 auto;
         padding: 1rem 0 6rem;
-      }
-
-      /* Lower max-width = desktop mast longer; mobile only on narrower viewports. */
-      @media (width <= 40rem) {
-        main {
-          padding-top: 0.75rem;
-        }
+        min-width: 0;
       }
 
       /**
@@ -280,10 +250,7 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
         min-width: 0;
       }
 
-      /**
-       * Subscribe strip: form and meta share one flex row on wide screens.
-       * On narrow screens we stack (column) but never use flex-grow — that was causing huge gaps.
-       */
+      /** Subscribe + RSS: one row; RSS always beside the form (no breakpoint stacking). */
       .site-mast__subscribe-wrap {
         width: 100%;
         min-width: 0;
@@ -292,36 +259,20 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
 
       .site-mast__below {
         display: flex;
-        flex-flow: row wrap;
-        align-items: flex-start;
-        gap: 0.45rem 0.65rem;
+        flex-flow: row nowrap;
+        align-items: center;
+        gap: 0.5rem 0.75rem;
         width: 100%;
         min-width: 0;
       }
 
       .site-mast__below > .subscribe-form {
-        flex: 0 1 22rem;
-        max-width: 22rem;
-        width: min(100%, 22rem);
-      }
-
-      .site-mast__meta {
-        display: flex;
-        flex-flow: row wrap;
-        align-items: center;
-        gap: 0.45rem 0.65rem;
+        flex: 1 1 auto;
         min-width: 0;
-
-        /* Take remaining width so margin-left: auto on socials hits the true right */
-        flex: 1 1 10rem;
+        max-width: 22rem;
       }
 
-      .site-mast__meta > .site-social {
-        margin-left: auto;
-        flex: 0 0 auto;
-      }
-
-      .site-mast__meta > .site-mast__rss {
+      .site-mast__below .site-mast__rss {
         flex: 0 0 auto;
       }
 
@@ -405,6 +356,17 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
         border-color: var(--rss-hover-border);
       }
 
+      .site-footer {
+        flex-shrink: 0;
+        margin-top: clamp(2rem, 5vw, 3rem);
+        padding: 0 0 2.5rem;
+      }
+
+      .site-footer__inner {
+        width: min(56rem, calc(100% - 2rem));
+        margin: 0 auto;
+      }
+
       /**
        * Single accent focus ring site-wide. Prefer box-shadow over outline so the ring
        * follows border-radius (Subscribe pill, post titles, pills, etc.).
@@ -414,9 +376,7 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
       .post-card__title a:focus-visible,
       .post-card__tags a:focus-visible,
       .post-card__view:focus-visible,
-      .theme-dd__trigger:focus-visible,
-      .theme-dd__opt:focus-visible,
-      .site-social .site-social__a:focus-visible,
+      .site-footer-social__a:focus-visible,
       .back-link:focus-visible,
       .prose a:focus-visible {
         outline: none;
@@ -438,75 +398,6 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
 
       .back-link:focus-visible {
         border-radius: 0.15rem;
-      }
-
-      .site-mast__tools {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        flex: 0 0 auto;
-        align-self: flex-start;
-
-        /* Slot for theme control: trigger uses --mast-tool-height + 0.42rem padding each side */
-        min-width: calc(var(--mast-tool-height) + 0.84rem);
-        min-height: var(--mast-tool-height);
-      }
-
-      @media (width <= 40rem) {
-        .site-mast {
-          gap: 0.5rem;
-        }
-
-        .site-mast__logo-wrap {
-          width: 3.5rem;
-          height: 3.5rem;
-        }
-
-        .site-mast__text {
-          min-height: 3.5rem;
-        }
-
-        .site-mast__brand {
-          gap: 0.85rem;
-        }
-
-        .site-mast__subscribe-wrap {
-          padding-top: 0.2rem;
-        }
-
-        .site-mast__below {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 0.45rem;
-        }
-
-        .site-mast__below > .subscribe-form {
-          align-self: stretch;
-          flex: 0 0 auto;
-          width: 100%;
-          max-width: none;
-          min-width: 0;
-        }
-
-        /* RSS left, socials right — single short row; no flex-grow */
-        .site-mast__meta {
-          flex: 0 0 auto;
-          flex-flow: row nowrap;
-          justify-content: space-between;
-          align-items: center;
-          width: 100%;
-          gap: 0.5rem;
-        }
-
-        .site-mast__meta > .site-social {
-          margin-left: 0;
-        }
-
-        /* Meta only contains socials (no RSS feed): keep chips on the right */
-        .site-mast__meta:not(:has(.site-mast__rss)) {
-          justify-content: flex-end;
-        }
       }
 
       /* —— Index / tag post cards (Olive) —— */
@@ -688,6 +579,7 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
                   width="76"
                   height="76"
                   decoding="async"
+                  fetchpriority="low"
                 />
               </span>
               <div class="site-mast__text">
@@ -696,21 +588,20 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
               </div>
             </a>
           </div>
-          <div class="site-mast__tools">
-            <ThemeSwitcher />
-          </div>
         </div>
         <div class="site-mast__subscribe-wrap">
           <div class="site-mast__below">
             <SubscribeForm />
-            <div class="site-mast__meta">
-              {rssFeed && <RssLink path={rssFeed.path} type={rssFeed.type} />}
-              <SocialLinks />
-            </div>
+            {rssFeed && <RssLink path={rssFeed.path} type={rssFeed.type} />}
           </div>
         </div>
       </div>
     </header>
     <slot />
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <SocialLinks />
+      </div>
+    </footer>
   </body>
 </html>
