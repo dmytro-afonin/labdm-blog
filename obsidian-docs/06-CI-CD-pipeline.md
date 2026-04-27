@@ -28,11 +28,9 @@ flowchart TD
   V --> M
 ```
 
-
-
 - **Always** on every trigger: `quality` and `vercel_config` run **in parallel** (no `needs` between them).
 - `**deploy_preview`: runs only if the `if:` on that job passes (see below). `needs: [quality, vercel_config]`.
-- `**deploy_production`**: runs only if its `if:` passes. `needs: [quality, vercel_config]`.
+- `**deploy_production`\*\*: runs only if its `if:` passes. `needs: [quality, vercel_config]`.
 
 Preview and production **never** run on the same event: preview is PR-only, production is `push` to `main` only.
 
@@ -43,7 +41,6 @@ Preview and production **never** run on the same event: preview is PR-only, prod
 **Runner:** `ubuntu-latest`.
 
 **Environment:** `ASTRO_TELEMETRY_DISABLED: "1"`.
-
 
 | Step | Action      | Exact command / behavior                                                                                                                                                                 |
 | ---- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -59,7 +56,6 @@ Preview and production **never** run on the same event: preview is PR-only, prod
 | 10   | Build       | `bun run build` → Astro production build                                                                                                                                                 |
 | 11   | Smoke       | `bun run smoke` → `node scripts/smoke-preview.mjs` serves built `index.html` from `dist/` or Vercel output paths and checks `package.json` → `smoke.expectedSnippets` substrings in HTML |
 
-
 If any step fails, the job fails. Downstream deploy jobs are skipped because they `needs: quality` and require `needs.quality.result == 'success'`.
 
 ---
@@ -68,13 +64,11 @@ If any step fails, the job fails. Downstream deploy jobs are skipped because the
 
 **Purpose:** Set job output `configured` to `true` only when all three repository secrets are non-empty.
 
-
 | Secret              | Role                     |
 | ------------------- | ------------------------ |
 | `VERCEL_ORG_ID`     | Vercel team/org id       |
 | `VERCEL_PROJECT_ID` | Vercel project id        |
 | `VERCEL_TOKEN`      | Vercel API token for CLI |
-
 
 **Step:** shell test — if all three are set, `echo configured=true` to `GITHUB_OUTPUT`; else `configured=false`.
 
@@ -98,7 +92,6 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 
 **Env:** `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_TOKEN` from secrets; `ASTRO_TELEMETRY_DISABLED: "1"`.
 
-
 | Step                                 | What it does                                                                                                                                                                      |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Checkout                             | `actions/checkout@v6`                                                                                                                                                             |
@@ -112,7 +105,6 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 | Report success / failure / cancelled | `report-deployment-status` with `success` + `environment-url` from deploy URL, or `failure` on fail/cancel.                                                                       |
 | Step summary                         | Appends “Preview URL” to `$GITHUB_STEP_SUMMARY`.                                                                                                                                  |
 | Update PR body                       | `github-script` injects or replaces a block between `<!-- vercel-preview-start -->` and `<!-- vercel-preview-end -->` with a link to the preview. `continue-on-error: true`.      |
-
 
 **When this job does not run:** push to `main`, PRs when Quality failed, or when Vercel secrets are missing.
 
@@ -133,7 +125,6 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 
 **Permissions:** `contents: read`, `deployments: write`.
 
-
 | Step                                 | What it does                                                                                                                                                                                                                                          |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Checkout, Node, Bun, cache, install  | Same as preview                                                                                                                                                                                                                                       |
@@ -144,7 +135,6 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 | Mark in progress                     | `report-deployment-status`                                                                                                                                                                                                                            |
 | Deploy                               | `bunx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"` (note: **no** URL capture from stdout in workflow; success URL is the `siteConfig.url` from the earlier step).                                                                         |
 | Report success / failure / cancelled | Same pattern as preview, with `environment-url: ${{ steps.production_site_url.outputs.production_site_url }}`                                                                                                                                         |
-
 
 ---
 
@@ -161,12 +151,10 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 
 ## Secret matrix (summary)
 
-
 | Secret present?          | `vercel_config`    | `deploy_*`                                   |
 | ------------------------ | ------------------ | -------------------------------------------- |
 | All three Vercel secrets | `configured=true`  | Run after Quality success (if event matches) |
 | Any missing              | `configured=false` | **Skipped** — Quality still runs             |
-
 
 ---
 
@@ -191,4 +179,3 @@ bun run smoke
 
 - [[04-Architecture]] — route vs static split in this repo.
 - [[07-Newsletter-subscriber-flows]] — product flows (deploy does not run newsletter sync scripts).
-

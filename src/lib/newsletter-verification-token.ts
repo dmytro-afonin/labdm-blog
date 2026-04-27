@@ -71,7 +71,9 @@ export function verifyNewsletterVerificationToken(
   const expected = Buffer.from(expectedSignature, "utf8");
 
   if (actual.length !== expected.length) return { status: "invalid" };
-  if (!timingSafeEqual(actual, expected)) return { status: "invalid" };
+  if (!timingSafeEqual(new Uint8Array(actual), new Uint8Array(expected))) {
+    return { status: "invalid" };
+  }
 
   try {
     const decoded = Buffer.from(encodedPayload, "base64url").toString("utf8");

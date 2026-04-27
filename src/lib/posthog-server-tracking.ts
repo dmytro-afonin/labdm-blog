@@ -93,11 +93,11 @@ export function captureServerException(input: {
  *
  * Errors are swallowed (logged) — telemetry must never fail a request.
  */
-export function flushPostHogServer(): Promise<void> {
-  if (!isPostHogServerEnabled()) return Promise.resolve();
-  return getPostHogServer()
-    .flush()
-    .catch((err) => {
-      console.warn("[posthog] flush failed", err);
-    });
+export async function flushPostHogServer(): Promise<void> {
+  if (!isPostHogServerEnabled()) return;
+  try {
+    await getPostHogServer().flush();
+  } catch (err) {
+    console.warn("[posthog] flush failed", err);
+  }
 }

@@ -10,6 +10,7 @@
   method="post"
   action="/api/subscribe"
   aria-label="Subscribe to email updates"
+  onsubmit="const b=document.getElementById('subscribe-submit');if(b)b.disabled=true;"
 >
   <label class="visually-hidden" for="subscribe-email">Email address</label>
   <input
@@ -21,7 +22,9 @@
     placeholder="Type your email…"
     required
   />
-  <button class="subscribe__btn" type="submit">Subscribe</button>
+  <button class="subscribe__btn" type="submit" id="subscribe-submit">
+    Subscribe
+  </button>
   <input
     class="subscribe__hp"
     type="text"
