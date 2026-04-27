@@ -28,7 +28,7 @@ runs:
   using: composite
   steps:
     - name: Create deployment status
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       env:
         DEPLOYMENT_ID: ${{ inputs.deployment-id }}
         STATE: ${{ inputs.state }}

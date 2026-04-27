@@ -17,6 +17,8 @@ export const siteConfig = {
   mastTagline: "Thoughts about tech and development",
   title: "Dmytro Afonin — labdm blog",
   description: "Thoughts about tech and development",
+  /** Used in RSS/Atom `&lt;copyright&gt;` (year is added at build time). */
+  copyrightOwner: "Dmytro Afonin",
   url: "https://blog.labdm.dev",
   lang: "en",
   feeds: [
