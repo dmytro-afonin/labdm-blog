@@ -64,7 +64,10 @@ flowchart TD
   MaybeSync2 --> R3
 ```
 
+
+
 **Redirects and PostHog server events (on success path before redirect)**
+
 
 | Result from `subscribeNewsletterEmail` | PostHog event (if server PostHog enabled) | HTTP                               |
 | -------------------------------------- | ----------------------------------------- | ---------------------------------- |
@@ -72,9 +75,12 @@ flowchart TD
 | `already-subscribed`                   | `newsletter_subscribe_already_subscribed` | `302` → `/newsletter/already`      |
 | `resubscribed`                         | `newsletter_resubscribed`                 | `302` → `/newsletter/resubscribed` |
 
+
 **Throws from `subscribeNewsletterEmail`:** caught → `302` → `/newsletter/error`, exception captured for PostHog.
 
-**New row creation:** `createSubscriberPendingVerification` inserts `status = subscribed`, `verified_at` still null until confirm step; verification email sent via `maybeSendNewsletterVerificationEmail` (subject to cooldown reservation).
+**Non-blocking side effects:** After a successful `subscribeNewsletterEmail`, the handler schedules `**waitUntil(runNewsletterSubscribeSideEffects(result, subscriber))`** so **verification email** (with DB reservation) and **Resend sync** when applicable do not delay the `302`. PostHog subscribe events are captured before redirect; `**waitUntil(flushPostHogServer())`** in a `finally` block flushes the server client.
+
+**New row creation:** `createSubscriberPendingVerification` inserts `status = subscribed`, `verified_at` still null until confirm step; verification email is sent from `**runNewsletterSubscribeSideEffects`** via `maybeSendNewsletterVerificationEmail` (subject to cooldown reservation).
 
 ---
 
@@ -85,18 +91,17 @@ flowchart TD
 1. **Short link (email-friendly):** `GET /c?token=...` — `src/pages/c.ts`. If `token` missing → `redirectUncached` → `/newsletter/confirm-invalid`. Else `302` to `/api/newsletter/confirm?token=...` (URL-encoded).
 2. **Long link:** `GET /api/newsletter/confirm?token=...` — `src/pages/api/newsletter/confirm.ts`.
 
-**`GET /api/newsletter/confirm`**
+`**GET /api/newsletter/confirm`**
 
 - No DB → `/newsletter/error` (uncached redirect).
 - Missing `token` query → `/newsletter/confirm-invalid`.
-- `confirmNewsletterSubscription(token)`:
+- `confirmNewsletterSubscription(token)` (`src/lib/newsletter.ts`):
   - **Token verify** (`src/lib/newsletter-verification-token.ts`):
     - Invalid signature or shape → result `invalid` → `/newsletter/confirm-invalid`.
     - `exp` in payload past `Date.now()` → `expired` (still “valid” structure) → `/newsletter/confirm-expired`. Token lifetime **24 hours** from creation.
-  - Load subscriber by `subscriberId` from payload; email in token must match row → else `invalid`.
-  - If not already verified: `markSubscriberVerified` sets `verified_at` (idempotent if already set).
-  - If `status === subscribed` and (not synced or no `resend_contact_id`) → `syncSubscriberNow(verifiedSubscriber)` **inline** (outbound Resend in request).
-- Success → PostHog `newsletter_confirmed` → `/newsletter/confirmed`.
+  - **Single Neon `UPDATE`:** `applyNewsletterVerificationFromToken(subscriberId, normalizedEmail)` — matches `**id` and `email`** from the token, sets `verified_at` (and first-time verification sync fields when `verified_at` was previously null). **No matching row** → `invalid` (tampered id/email or deleted row). Repeat clicks on an already-verified row return the row **without** resetting sync metadata.
+  - Returns `**subscriberForBackgroundSync`** when `status === subscribed` and Resend sync is still needed; the HTTP handler passes that to `**waitUntil(runNewsletterConfirmSideEffects(subscriber))`**, which calls `**syncSubscriberNow**` so the **redirect is not blocked** on Resend.
+- Success → PostHog `newsletter_confirmed` (in handler, with timing metadata in dev/prod) → `/newsletter/confirmed`.
 - Uncaught error → `/newsletter/error`.
 
 Uses `redirectUncached` to avoid CDN caching wrong outcomes on confirmation.
@@ -110,21 +115,22 @@ flowchart TD
   T -->|yes| V[verifyNewsletterVerificationToken]
   V -->|invalid| I1
   V -->|expired| X[/newsletter/confirm-expired/]
-  V -->|valid| L[load subscriber by id; email must match]
-  L -->|mismatch or missing| I1
-  L -->|ok| M[markSubscriberVerified if needed]
-  M --> S{subscribed and needs sync?}
-  S -->|yes| R[syncSubscriberNow]
-  S -->|no| OK
-  R --> PH[PostHog newsletter_confirmed]
+  V -->|valid| U["UPDATE verify WHERE id + email RETURNING row"]
+  U -->|0 rows| I1
+  U -->|ok| W{needs Resend sync?}
+  W -->|yes| BG["waitUntil syncSubscriberNow"]
+  W -->|no| PH
+  BG --> PH[PostHog newsletter_confirmed]
   PH --> OK[/newsletter/confirmed/]
 ```
+
+
 
 ---
 
 ## C. Outbound sync to Resend (not a separate product “queue” in code)
 
-**`syncSubscriberNow(subscriber)`** (in `src/lib/newsletter.ts`)
+`**syncSubscriberNow(subscriber)**` (in `src/lib/newsletter.ts`)
 
 - **Guard:** throws if `verified_at` is null (unverified must not sync).
 - Resolves or creates Resend contact: `getResendContact` by id or email; `createResendContact` or `updateResendContact` with `unsubscribed` flag matching `subscriber.status`.
@@ -133,7 +139,7 @@ flowchart TD
 
 **Who calls it**
 
-- After confirm (if needed), as above.
+- After confirm (if needed), via `**runNewsletterConfirmSideEffects`** inside `**waitUntil`** from `src/pages/api/newsletter/confirm.ts` (not inline in the redirect response path).
 - Inside `subscribeNewsletterEmail` when re-subscribing a **verified** previously-unsubscribed email, or when **verified** but contact not fully synced.
 - **Not** called at the end of `performNewsletterManageAction` (unsubscribe / resubscribe from manage page) — those only run `updateSubscriberStatus`, which sets `sync_status = 'pending'`. A later **batch sync** or user-driven path must run `syncPendingSubscribers`.
 
@@ -143,17 +149,17 @@ flowchart TD
 
 ## D. Inbound: `POST /api/webhooks/resend/contacts`
 
-**File:** `src/pages/api/webhooks/resend/contacts.ts`. **Svix**-signed (see `src/lib/resend.ts` — `verifyResendContactWebhook`).
+**File:** `src/pages/api/webhooks/resend/contacts.ts`. **Svix**-signed (see `src/lib/resend.ts` — `verifyResendContactWebhook`). Responses include `**x-request-id`** for correlation.
 
-1. Read raw body as text; verify signature with headers. Failure → `400` + message.
+1. Read raw body as text (failures are caught → PostHog + `400`); verify signature with headers. Failure → `400` + message.
 2. Header `svix-id` required as `providerEventId`. Missing → `400`.
-3. `beginResendContactWebhookEvent` — insert `subscriber_sync_events` with unique `provider_event_id`; on duplicate **23505**, if prior row already `success` or `ignored`, return `200` `{ ok: true, duplicate: true }` (idempotent).
+3. `beginResendContactWebhookEvent` — insert `subscriber_sync_events` with unique `provider_event_id`; on duplicate **23505**, if prior row already `success` or `ignored`, return `200` `{ ok: true, duplicate: true }` (idempotent). DB errors starting the event are caught → PostHog + `500`.
 4. `applyResendContactWebhookEvent`:
-   - Find subscriber by `event.data.id` (Resend contact id) or `event.data.email`.
-   - No row → `ignored` (no DB update to subscriber).
-   - Unverified subscriber → `ignored` (message explains).
-   - `contact.deleted` → clear `resend_contact_id`, set `sync_status = pending`, error message, `last_webhook_at` — expect manual `newsletter:sync` to recreate contact.
-   - `contact.created` / `contact.updated` → map `unsubscribed` field to local `status` / `consent` / timestamps; set `sync_status = synced`, `last_webhook_at`, etc.
+  - Find subscriber by `event.data.id` (Resend contact id) or `event.data.email`.
+  - No row → `ignored` (no DB update to subscriber).
+  - Unverified subscriber → `ignored` (message explains).
+  - `contact.deleted` → clear `resend_contact_id`, set `sync_status = pending`, error message, `last_webhook_at` — expect manual `newsletter:sync` to recreate contact.
+  - `contact.created` / `contact.updated` → map `unsubscribed` field to local `status` / `consent` / timestamps; set `sync_status = synced`, `last_webhook_at`, etc.
 
 ```mermaid
 flowchart TD
@@ -170,20 +176,22 @@ flowchart TD
   App -->|throw| B500[500 + finish failed]
 ```
 
-5. `finishResendContactWebhookEvent` updates the event row status. Handler returns `200` JSON on success; `500` on processing error after best-effort finish with `failed`.
+
+
+1. `finishResendContactWebhookEvent` updates the event row status. Handler returns `200` JSON on success; `500` on processing error after best-effort finish with `failed`.
 
 ---
 
 ## E. Preferences: manage link (unsubscribe / resubscribe)
 
-**`GET /newsletter/manage/:token`** — `src/pages/newsletter/manage/[token].astro` — `prerender = false`.
+`**GET /newsletter/manage/:token**` — `src/pages/newsletter/manage/[token].astro` — `prerender = false`.
 
 - `getNewsletterManageView(token)` → `null` if DB off, bad token, or email mismatch (implementation uses `src/lib/newsletter-manage-token.ts` + DB).
 - If subscriber `status === subscribed` → form with `action=unsubscribe`, label “Unsubscribe”.
 - If `unsubscribed` → form with `action=resubscribe`, label “Resubscribe”.
 - Invalid → copy + link to `/newsletter/manage-invalid` static state page.
 
-**`POST /api/newsletter/manage`** — `src/pages/api/newsletter/manage.ts`.
+`**POST /api/newsletter/manage**` — `src/pages/api/newsletter/manage.ts`.
 
 - Same content-type rules as subscribe; fields `token` (string) and `action` (`unsubscribe` | `resubscribe` only). Bad combo → `/newsletter/manage-invalid`.
 - `performNewsletterManageAction`:
@@ -206,6 +214,7 @@ These are **destinations** for the `302` responses above, not API endpoints.
 
 ## G. Quick reference: HTTP → page
 
+
 | Outcome                        | Browser lands on              |
 | ------------------------------ | ----------------------------- |
 | Need to confirm email          | `/newsletter/check-inbox`     |
@@ -220,9 +229,14 @@ These are **destinations** for the `302` responses above, not API endpoints.
 | Unsubscribed via manage        | `/newsletter/unsubscribed`    |
 | Re-subscribed via manage       | `/newsletter/resubscribed`    |
 
+
 ---
 
 ## See also
 
-- `README.md` (repo root) — env vars: `POSTGRES_URL`, `RESEND_*`, `NEWSLETTER_TOKEN_SECRET`, `RESEND_WEBHOOK_SECRET`, PostHog.
+- `README.md` (repo root) — env vars: `POSTGRES_URL`, `RESEND_`*, `NEWSLETTER_TOKEN_SECRET`, `RESEND_WEBHOOK_SECRET`, PostHog.
 - [[06-CI-CD-pipeline]] — delivery pipeline (does not run newsletter scripts unless you add a scheduled job).
+
+2026-04-26 22:54
+
+07-Newsletter-subscriber-flows

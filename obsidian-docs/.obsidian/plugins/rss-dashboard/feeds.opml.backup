@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>RSS dashboard feeds</title>
+    <dateCreated>Sun, 26 Apr 2026 21:06:48 GMT</dateCreated>
+  </head>
+  <body>
+    <outline text="Uncategorized" title="Uncategorized">
+    </outline>
+    <outline text="Videos" title="Videos">
+    </outline>
+    <outline text="Podcasts" title="Podcasts">
+    </outline>
+    <outline text="RSS" title="RSS">
+      <outline text="David Heinemeier Hansson" title="David Heinemeier Hansson" type="rss" xmlUrl="https://world.hey.com/dhh/feed.atom" category="RSS"/>
+    </outline>
+  </body>
+</opml>

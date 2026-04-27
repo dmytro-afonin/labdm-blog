@@ -21,16 +21,21 @@
 | `/api/webhooks/resend/contacts` | Inbound Resend contact events                                |
 | `/newsletter/*`                 | Static result and management pages                           |
 
+## Middleware
+
+- **`src/middleware.ts`** (Vercel **edge**, via `adapter: vercel({ middlewareMode: "edge" })`) adds **`x-request-id`** on responses for log / PostHog correlation. On **prerendered** routes it skips reading `request.headers` so static generation does not warn about `Astro.request.headers`.
+
 ## Key directories
 
 | Path                 | Purpose                                                                |
 | -------------------- | ---------------------------------------------------------------------- |
 | `src/config/`        | `site.ts`, `palette.ts` — branding, URLs, palette tokens for CSS       |
 | `src/content/posts/` | Markdown + frontmatter                                                 |
-| `src/components/`    | Astro components (PostCard, SubscribeForm, etc.)                       |
+| `src/components/`    | Astro components (PostCard, SubscribeForm, Crumbs, etc.)               |
 | `src/layouts/`       | `BaseLayout.astro`                                                     |
-| `src/lib/`           | Neon, Resend, newsletter tokens, PostHog server                        |
+| `src/lib/`           | Neon, Resend, newsletter tokens, PostHog server, timing helpers        |
 | `src/pages/`         | File-based routes                                                      |
+| `src/styles/`        | `color-scheme-themes.css` — global light/dark variables                |
 | `src/utils/posts.ts` | Visibility, sort, reading time, tag helpers                            |
 | `db/migrations/`     | SQL for Neon                                                           |
 | `scripts/`           | `newsletter-sync.ts`, `newsletter-sync-report.ts`, `smoke-preview.mjs` |

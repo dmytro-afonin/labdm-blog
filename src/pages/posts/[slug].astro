@@ -1,11 +1,16 @@
 ---
 import { render } from "astro:content";
 
-import PostDateRead from "../../components/PostDateRead.astro";
+import Crumbs from "../../components/Crumbs.astro";
 import PostTags from "../../components/PostTags.astro";
-import PostUpdatedLine from "../../components/PostUpdatedLine.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { getPostUrl, getVisiblePosts, type BlogPost } from "../../utils/posts";
+import {
+  formatPostDateQuiet,
+  getPostUrl,
+  getReadingTimeLabel,
+  getVisiblePosts,
+  type BlogPost,
+} from "../../utils/posts";
 
 export async function getStaticPaths() {
   const posts = await getVisiblePosts();
@@ -38,22 +43,36 @@ const { Content } = await render(post);
   ogType="article"
 >
   <main>
-    <a class="back-link" href="/">All posts</a>
-
     <article class="post">
       <header class="post-header">
-        <div class="post-meta" aria-label="Post metadata">
-          <PostDateRead post={post} />
+        <Crumbs>
+          <li class="post-crumbs__item">
+            <time datetime={post.data.pubDate.toISOString()}>
+              {formatPostDateQuiet(post.data.pubDate)}
+            </time>
+          </li>
+          <li class="post-crumbs__item">
+            <span>{getReadingTimeLabel(post)}</span>
+          </li>
           {
             post.data.updatedDate && (
-              <PostUpdatedLine updatedDate={post.data.updatedDate} />
+              <li class="post-crumbs__item">
+                <span>
+                  Updated{" "}
+                  <time datetime={post.data.updatedDate.toISOString()}>
+                    {formatPostDateQuiet(post.data.updatedDate)}
+                  </time>
+                </span>
+              </li>
             )
           }
-        </div>
-
-        <h1>{post.data.title}</h1>
-        <p class="description">{post.data.description}</p>
-
+        </Crumbs>
+        <h1 class="post-title">{post.data.title}</h1>
+        {
+          post.data.description && (
+            <p class="post-lede">{post.data.description}</p>
+          )
+        }
         <PostTags tags={post.data.tags} ariaLabel="Post tags" />
       </header>
 
@@ -66,16 +85,21 @@ const { Content } = await render(post);
       (newerPost || olderPost) && (
         <nav class="post-pagination" aria-label="Adjacent posts">
           {newerPost && (
-            <a class="post-pagination-link" href={getPostUrl(newerPost)}>
-              <span class="post-pagination-label">Newer post</span>
-              <span class="post-pagination-title">{newerPost.data.title}</span>
+            <a
+              class="post-pagination__link post-pagination__link--prev"
+              href={getPostUrl(newerPost)}
+            >
+              <span class="post-pagination__label">← Newer</span>
+              <span class="post-pagination__title">{newerPost.data.title}</span>
             </a>
           )}
-
           {olderPost && (
-            <a class="post-pagination-link" href={getPostUrl(olderPost)}>
-              <span class="post-pagination-label">Older post</span>
-              <span class="post-pagination-title">{olderPost.data.title}</span>
+            <a
+              class="post-pagination__link post-pagination__link--next"
+              href={getPostUrl(olderPost)}
+            >
+              <span class="post-pagination__label">Older →</span>
+              <span class="post-pagination__title">{olderPost.data.title}</span>
             </a>
           )}
         </nav>
@@ -83,142 +107,3 @@ const { Content } = await render(post);
     }
   </main>
 </BaseLayout>
-
-<style is:global>
-  /* stylelint-disable no-descending-specificity -- .prose link patterns */
-  .back-link {
-    display: inline-flex;
-    margin-bottom: 0.5rem;
-    margin-left: 1rem;
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 600;
-  }
-
-  .back-link:hover {
-    text-decoration: underline;
-  }
-
-  .post {
-    padding: clamp(1.5rem, 4vw, 2.5rem);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    background: var(--panel);
-    box-shadow: var(--elev-shadow);
-  }
-
-  .post-header {
-    margin-bottom: 2rem;
-  }
-
-  .post-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .post-meta :global(.post-card__meta) {
-    margin: 0;
-  }
-
-  .post-header h1 {
-    margin: 0 0 1rem;
-    font-size: clamp(1.5rem, 7vw, 2.5rem);
-    line-height: 1.02;
-    color: var(--text-primary);
-  }
-
-  .description {
-    margin: 0 0 1.25rem;
-    color: var(--muted);
-    font-size: 1.14rem;
-    line-height: 1.7;
-  }
-
-  .prose {
-    color: var(--body-copy);
-    font-size: 1.08rem;
-    line-height: 1.85;
-  }
-
-  .prose a {
-    color: var(--accent-soft);
-    font-weight: 600;
-    text-decoration: none;
-    border-bottom: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
-  }
-
-  .prose a:hover {
-    color: var(--text);
-    border-bottom-color: var(--accent);
-  }
-
-  .prose p,
-  .prose ul,
-  .prose ol,
-  .prose blockquote,
-  .prose pre {
-    margin: 0 0 1.25rem;
-  }
-
-  .prose h2,
-  .prose h3,
-  .prose h4 {
-    margin: 2rem 0 1rem;
-    line-height: 1.2;
-  }
-
-  .prose code {
-    font-family: var(--font-mono);
-  }
-
-  .prose pre {
-    overflow-x: auto;
-    padding: 1rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-code, 0.55rem);
-    background: var(--code-bg, rgb(22 24 22 / 92%));
-  }
-
-  .prose blockquote {
-    padding-left: 1rem;
-    border-left: 3px solid var(--accent-border);
-    color: var(--muted);
-  }
-
-  .post-pagination {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-    gap: 1rem;
-    margin-top: 1.5rem;
-  }
-
-  .post-pagination-link {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    padding: 1rem 1.25rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    background: var(--panel);
-    box-shadow: var(--elev-shadow);
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .post-pagination-link:hover {
-    border-color: var(--accent-border);
-  }
-
-  .post-pagination-label {
-    color: var(--meta);
-    font-size: 0.9rem;
-  }
-
-  .post-pagination-title {
-    color: var(--accent-soft);
-    font-weight: 600;
-  }
-</style>

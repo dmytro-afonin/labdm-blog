@@ -55,4 +55,4 @@ During development you may choose to show drafts on listing pages; gate that wit
 
 - Collection loader and schema: `src/content.config.ts`
 - Example published post: `src/content/posts/welcome-to-labdm-blog.md`
-- Example draft: `src/content/posts/example-draft-post.md`
+- Drafts: set `draft: true` in frontmatter (see other posts under `src/content/posts/` for examples)

@@ -1,4 +1,5 @@
 ---
+import Crumbs from "../../components/Crumbs.astro";
 import PostCard from "../../components/PostCard.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import {
@@ -47,8 +48,9 @@ const tagLabels = [
   ),
 ].sort((left, right) => left.localeCompare(right));
 const tagLabel = tagLabels[0] ?? formatTagLabelFromSlug(tagSlug);
+const postsLabel = `${posts.length} ${posts.length === 1 ? "post" : "posts"}`;
 const pageTitle = `Posts tagged ${tagLabel}`;
-const pageDescription = `Browse ${posts.length} published ${posts.length === 1 ? "post" : "posts"} tagged ${tagLabel}.`;
+const pageDescription = `Browse ${postsLabel} tagged ${tagLabel}.`;
 ---
 
 <BaseLayout
@@ -57,64 +59,18 @@ const pageDescription = `Browse ${posts.length} published ${posts.length === 1 ?
   canonicalPath={`/tags/${tagSlug}/`}
 >
   <main>
-    <a class="back-link" href="/">All posts</a>
+    <h1 class="visually-hidden">{pageTitle}</h1>
+    <Crumbs>
+      <li class="post-crumbs__item">
+        <span>Tagged: {tagLabel}</span>
+      </li>
+      <li class="post-crumbs__item">
+        <span>{postsLabel}</span>
+      </li>
+    </Crumbs>
 
-    <header class="tag-page">
-      <p class="tag-page__eyebrow">Tagged</p>
-      <h1 class="tag-page__title">{tagLabel}</h1>
-      <p class="tag-page__summary">
-        {posts.length} published {posts.length === 1 ? "post" : "posts"} with this
-        label.
-      </p>
-    </header>
-
-    <section aria-labelledby="posts-heading">
-      <h2 id="posts-heading" class="visually-hidden">Posts</h2>
-      <ul class="post-feed">
-        {posts.map((post) => <PostCard post={post} />)}
-      </ul>
-    </section>
+    <ul class="post-feed">
+      {posts.map((post) => <PostCard post={post} />)}
+    </ul>
   </main>
 </BaseLayout>
-
-<style>
-  .back-link {
-    display: inline-flex;
-    margin-bottom: 1.25rem;
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.98rem;
-  }
-
-  .back-link:hover {
-    text-decoration: underline;
-  }
-
-  .tag-page {
-    margin-bottom: 2rem;
-  }
-
-  .tag-page__eyebrow {
-    margin: 0 0 0.35rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--meta);
-  }
-
-  .tag-page__title {
-    margin: 0 0 0.5rem;
-    font-size: clamp(1.85rem, 4.1vw, 2.65rem);
-    line-height: 1.12;
-  }
-
-  .tag-page__summary {
-    margin: 0;
-    max-width: 40ch;
-    font-size: 1rem;
-    line-height: 1.55;
-    color: var(--muted);
-  }
-</style>

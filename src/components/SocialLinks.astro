@@ -4,40 +4,12 @@ import { getSocialLinkItems } from "../config/site";
 const items = getSocialLinkItems();
 ---
 
-<nav class="site-footer-social" aria-label="Social profiles">
+<nav class="social" aria-label="Social profiles">
   {
     items.map((item) => (
-      <a
-        class="site-footer-social__a"
-        href={item.href}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a href={item.href} target="_blank" rel="noopener noreferrer">
         {item.label}
       </a>
     ))
   }
 </nav>
-
-<style>
-  .site-footer-social {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem 1.25rem;
-    margin: 0;
-    padding: 0;
-    font-size: 0.9rem;
-    line-height: 1.5;
-  }
-
-  .site-footer-social__a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  .site-footer-social__a:hover {
-    text-decoration: underline;
-  }
-</style>

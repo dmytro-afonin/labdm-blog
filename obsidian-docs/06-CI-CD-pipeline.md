@@ -28,9 +28,11 @@ flowchart TD
   V --> M
 ```
 
+
+
 - **Always** on every trigger: `quality` and `vercel_config` run **in parallel** (no `needs` between them).
-- **`deploy_preview`**: runs only if the `if:` on that job passes (see below). `needs: [quality, vercel_config]`.
-- **`deploy_production`**: runs only if its `if:` passes. `needs: [quality, vercel_config]`.
+- `**deploy_preview`: runs only if the `if:` on that job passes (see below). `needs: [quality, vercel_config]`.
+- `**deploy_production`**: runs only if its `if:` passes. `needs: [quality, vercel_config]`.
 
 Preview and production **never** run on the same event: preview is PR-only, production is `push` to `main` only.
 
@@ -42,6 +44,7 @@ Preview and production **never** run on the same event: preview is PR-only, prod
 
 **Environment:** `ASTRO_TELEMETRY_DISABLED: "1"`.
 
+
 | Step | Action      | Exact command / behavior                                                                                                                                                                 |
 | ---- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | Checkout    | `actions/checkout@v6`                                                                                                                                                                    |
@@ -51,10 +54,11 @@ Preview and production **never** run on the same event: preview is PR-only, prod
 | 5    | Install     | `bun install --frozen-lockfile`                                                                                                                                                          |
 | 6    | Format      | `bun run format:check` → Prettier check                                                                                                                                                  |
 | 7    | Lint code   | `bun run lint:code` → ESLint                                                                                                                                                             |
-| 8    | Lint styles | `bun run lint:styles` → Stylelint on `src/**/*.{astro,css,scss}`                                                                                                                         |
+| 8    | Lint styles | `bun run lint:styles` → Stylelint on `src/**/*.{astro,css}`                                                                                                                              |
 | 9    | Types       | `bun run typecheck` → `astro check`                                                                                                                                                      |
 | 10   | Build       | `bun run build` → Astro production build                                                                                                                                                 |
 | 11   | Smoke       | `bun run smoke` → `node scripts/smoke-preview.mjs` serves built `index.html` from `dist/` or Vercel output paths and checks `package.json` → `smoke.expectedSnippets` substrings in HTML |
+
 
 If any step fails, the job fails. Downstream deploy jobs are skipped because they `needs: quality` and require `needs.quality.result == 'success'`.
 
@@ -64,11 +68,13 @@ If any step fails, the job fails. Downstream deploy jobs are skipped because the
 
 **Purpose:** Set job output `configured` to `true` only when all three repository secrets are non-empty.
 
+
 | Secret              | Role                     |
 | ------------------- | ------------------------ |
 | `VERCEL_ORG_ID`     | Vercel team/org id       |
 | `VERCEL_PROJECT_ID` | Vercel project id        |
 | `VERCEL_TOKEN`      | Vercel API token for CLI |
+
 
 **Step:** shell test — if all three are set, `echo configured=true` to `GITHUB_OUTPUT`; else `configured=false`.
 
@@ -78,19 +84,20 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 
 ## Job 3: `deploy_preview` (name: “Vercel Preview”)
 
-**`if` (all must be true):**
+`**if` (all must be true):
 
 1. `github.event_name == 'pull_request'`
 2. `needs.quality.result == 'success'`
 3. `needs.vercel_config.outputs.configured == 'true'`
 
-**`needs`:** `quality`, `vercel_config`.
+`**needs`: `quality`, `vercel_config`.
 
 **Concurrency:** `group: vercel-preview-${{ github.event.pull_request.number }}`, `cancel-in-progress: true` — new commits on the same PR cancel an in-flight preview deploy.
 
 **Permissions:** `contents: read`, `deployments: write`, `pull-requests: write` (for PR body update and GitHub Deployment API).
 
 **Env:** `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_TOKEN` from secrets; `ASTRO_TELEMETRY_DISABLED: "1"`.
+
 
 | Step                                 | What it does                                                                                                                                                                      |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -106,24 +113,26 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 | Step summary                         | Appends “Preview URL” to `$GITHUB_STEP_SUMMARY`.                                                                                                                                  |
 | Update PR body                       | `github-script` injects or replaces a block between `<!-- vercel-preview-start -->` and `<!-- vercel-preview-end -->` with a link to the preview. `continue-on-error: true`.      |
 
+
 **When this job does not run:** push to `main`, PRs when Quality failed, or when Vercel secrets are missing.
 
 ---
 
 ## Job 4: `deploy_production` (name: “Vercel Production”)
 
-**`if` (all must be true):**
+`**if` (all must be true):
 
 1. `github.event_name == 'push'`
 2. `github.ref == 'refs/heads/main'`
 3. `needs.quality.result == 'success'`
 4. `needs.vercel_config.outputs.configured == 'true'`
 
-**`needs`:** `quality`, `vercel_config`.
+`**needs`: `quality`, `vercel_config`.
 
 **Concurrency:** `group: vercel-production-main`, `cancel-in-progress: false` — two production deploys do not cancel each other.
 
 **Permissions:** `contents: read`, `deployments: write`.
+
 
 | Step                                 | What it does                                                                                                                                                                                                                                          |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -136,6 +145,7 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 | Deploy                               | `bunx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"` (note: **no** URL capture from stdout in workflow; success URL is the `siteConfig.url` from the earlier step).                                                                         |
 | Report success / failure / cancelled | Same pattern as preview, with `environment-url: ${{ steps.production_site_url.outputs.production_site_url }}`                                                                                                                                         |
 
+
 ---
 
 ## Relationship to `vercel.json`
@@ -144,15 +154,19 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 
 - `"git": { "deploymentEnabled": false }` — **Vercel’s own Git integration does not** create deployments on push. All production/preview deploys in this setup go through **GitHub Actions** + Vercel CLI as above.
 - `installCommand` / `buildCommand` — used when Vercel **does** a build (CLI `vercel build` uses project settings); local CI uses explicit `bun` commands in the workflow.
+- `devCommand` — `bun run dev` (Astro dev server); used when you run `**vercel dev` locally so the CLI does not recurse into another `vercel dev` (the `dev` script must stay framework-only).
+- `regions` — e.g. `["iad1"]` (Washington, D.C.) to align serverless routes with Neon in **AWS `us-east-1`** and cut database RTT.
 
 ---
 
 ## Secret matrix (summary)
 
+
 | Secret present?          | `vercel_config`    | `deploy_*`                                   |
 | ------------------------ | ------------------ | -------------------------------------------- |
 | All three Vercel secrets | `configured=true`  | Run after Quality success (if event matches) |
 | Any missing              | `configured=false` | **Skipped** — Quality still runs             |
+
 
 ---
 
@@ -177,3 +191,4 @@ bun run smoke
 
 - [[04-Architecture]] — route vs static split in this repo.
 - [[07-Newsletter-subscriber-flows]] — product flows (deploy does not run newsletter sync scripts).
+

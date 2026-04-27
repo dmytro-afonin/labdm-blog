@@ -38,8 +38,8 @@ flowchart LR
 
 ## Vercel
 
-- **Adapter** — `@astrojs/vercel` in `astro.config.ts`; `output: "static"` with **opt-in** `prerender: false` on server routes (e.g. API).
-- **`vercel.json`** — `git.deploymentEnabled: false` so **no** automatic Git deploys from Vercel; deploys run from GitHub Actions after Quality passes.
+- **Adapter** — `@astrojs/vercel` in `astro.config.ts`; `output: "static"` with **opt-in** `prerender: false` on server routes (e.g. API). **`middlewareMode: "edge"`** runs `src/middleware.ts` on the edge (response `x-request-id`).
+- **`vercel.json`** — `git.deploymentEnabled: false` so **no** automatic Git deploys from Vercel; deploys run from GitHub Actions after Quality passes. May include **`devCommand`: `bun run dev`** (Astro only) for `vercel dev`, and **`regions`** (e.g. `iad1` near Neon **`us-east-1`**).
 - **Install/build** — `bun install --frozen-lockfile`, `bun run build` on Vercel-compatible build.
 
 ## Bun
@@ -71,4 +71,4 @@ flowchart LR
 
 - **Pagefind** — static search (LAB-45).
 - **Vercel Speed Insights** (LAB-46).
-- **Engagement** — view counts, reactions (M6) — Neon or edge (LAB-47, LAB-48, LAB-49).
+- **Engagement** — view counts, reactions (**Milestone 6 / backlog**) — Neon or edge (LAB-47, LAB-48, LAB-49).

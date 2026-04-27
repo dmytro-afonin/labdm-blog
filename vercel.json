@@ -5,5 +5,7 @@
     "deploymentEnabled": false
   },
   "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "bun run build"
+  "buildCommand": "bun run build",
+  "devCommand": "bun run dev",
+  "regions": ["iad1"]
 }

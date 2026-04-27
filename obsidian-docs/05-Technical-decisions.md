@@ -26,7 +26,7 @@
 
 **Context:** Broken builds on `main` waste time and hurt trust.
 
-**Decision:** `vercel.json` disables automatic Git-triggered Vercel deploys; **GitHub Actions** runs Quality then **conditionally** runs Vercel deploy with CLI when `VERCEL_*` secrets exist.
+**Decision:** `vercel.json` disables automatic Git-triggered Vercel deploys; **GitHub Actions** runs Quality then **conditionally** runs Vercel deploy with CLI when `VERCEL_`* secrets exist.
 
 **Consequence:** Slightly more CI configuration; predictability in what reaches preview/production.
 

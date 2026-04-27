@@ -14,7 +14,7 @@ A **personal / lab tech blog** at the canonical host `https://blog.labdm.dev` �
 
 - **Not** using Convex in this repository (historical tickets may reference it; the chosen stack is Vercel server routes + Neon).
 - **Not** a multi-author CMS or a headless CMS with draft previews on a different origin (unless you add that later; currently drafts are a frontmatter flag + `isVisiblePost()`).
-- **Not** a comment system or real-time community layer by default; engagement ideas are optional **M6** and storage is flexible (Neon, edge) — not prescribed as Convex.
+- **Not** a comment system or real-time community layer by default; engagement ideas are optional **Milestone 6 (M6)** backlog items (see [[08-Backlog-and-roadmap]]) and storage is flexible (Neon, edge) — not prescribed as Convex.
 
 ## Personas (lightweight)
 

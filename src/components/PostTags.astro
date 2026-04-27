@@ -12,7 +12,7 @@ const { tags, ariaLabel } = Astro.props;
 
 {
   tags.length > 0 && (
-    <ul class="post-card__tags" aria-label={ariaLabel}>
+    <ul class="post-tags" aria-label={ariaLabel}>
       {tags.map((tag) => (
         <li>
           <a href={getTagUrl(tag)}>{tag}</a>

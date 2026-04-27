@@ -1,42 +1,35 @@
 ---
-import PostCardViewIcon from "./PostCardViewIcon.astro";
-import PostDateRead from "./PostDateRead.astro";
 import PostTags from "./PostTags.astro";
-import { getPostUrl, previewBlurb, type BlogPost } from "../utils/posts";
+import {
+  formatPostDateQuiet,
+  getPostUrl,
+  getReadingTimeMinutes,
+  previewBlurb,
+  type BlogPost,
+} from "../utils/posts";
 
 interface Props {
   post: BlogPost;
-  url?: string;
-  excerpt?: string;
 }
 
-const { post, url: urlProp, excerpt: excerptProp } = Astro.props;
-const href = urlProp ?? getPostUrl(post);
-const blurb = excerptProp ?? previewBlurb(post);
-const isDraft = post.data.draft;
+const { post } = Astro.props;
+const href = getPostUrl(post);
+const blurb = previewBlurb(post);
 const tags = post.data.tags ?? [];
 ---
 
-<li>
-  <article class="post-card">
-    <h3 class="post-card__title">
-      <a href={href}>{post.data.title}</a>
-    </h3>
-    <p class="post-card__excerpt">{blurb}</p>
-    <PostTags tags={tags} ariaLabel={`Tags for ${post.data.title}`} />
-    <footer class="post-card__bar">
-      <div class="post-card__actions">
-        <a
-          class="post-card__view"
-          href={href}
-          aria-label={`Read more: ${post.data.title}`}
-        >
-          Read more
-          <PostCardViewIcon />
-        </a>
-        {isDraft && <span class="post-card__draft">Draft</span>}
-      </div>
-      <PostDateRead post={post} />
-    </footer>
-  </article>
+<li class="post-row">
+  <h3 class="post-row__title">
+    <a href={href}>{post.data.title}</a>
+    {post.data.draft && <small class="post-row__draft"> [draft]</small>}
+  </h3>
+  {blurb && <p class="post-excerpt">{blurb}</p>}
+  <span class="post-row__meta">
+    <time datetime={post.data.pubDate.toISOString()}>
+      {formatPostDateQuiet(post.data.pubDate)}
+    </time>
+    <span aria-hidden="true">·</span>
+    <span>{getReadingTimeMinutes(post)} min</span>
+  </span>
+  <PostTags tags={tags} ariaLabel={`Tags for ${post.data.title}`} />
 </li>

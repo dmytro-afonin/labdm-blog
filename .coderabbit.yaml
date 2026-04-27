@@ -31,7 +31,8 @@ reviews:
   in_progress_fortune: true
   poem: false
   enable_prompt_for_ai_agents: true
-  path_filters: []
+  path_filters:
+    - "!obsidian-docs/**"
   path_instructions: []
   abort_on_close: true
   disable_cache: false

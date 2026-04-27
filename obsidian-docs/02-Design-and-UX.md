@@ -3,17 +3,17 @@
 ## Design direction
 
 - **"Olive"** mast: uppercase name row + short tagline (`siteConfig.mastName`, `mastTagline` in `src/config/site.ts`), calm typography, reading-first layout.
-- **Palette** driven from `src/config/palette.ts` and SCSS; **theme color** in site config is kept in sync with the favicon note in code comments.
+- **Palette** driven from `src/config/palette.ts` and global CSS in `src/styles/color-scheme-themes.css`; **theme color** in `BaseLayout.astro` uses fixed light/dark values with `prefers-color-scheme` media on `meta name="theme-color"`.
 - **Post cards** — date, title, blurb, tags, reading time; index uses a quiet date style (`formatPostDateQuiet`) and a combined excerpt/description when both exist (`previewBlurb` in `src/utils/posts.ts`).
 
 ## Layout shell
 
-- **`BaseLayout.astro`** — global head metadata (including `theme-color` per `prefers-color-scheme`), RSS `<link rel="alternate">`, mast, footer area patterns.
-- **Article** — `src/pages/posts/[slug].astro` (collection-driven) with tags, `PostUpdatedLine`, `PostDateRead` / reading time, prev/next (see `PostCard` / navigation in codebase).
+- **`BaseLayout.astro`** — global head metadata (including `theme-color` per `prefers-color-scheme`), RSS `<link rel="alternate">`, mast, subscribe row, footer.
+- **Article** — `src/pages/posts/[slug].astro` with **`Crumbs.astro`** (breadcrumb `<nav>` + `<ol>`: “All posts” link uses `import.meta.env.BASE_URL`; slot supplies `<li>` items; `/` separators via CSS), **`PostTags`**, reading-time label, prev/next links.
 
 ## Theming
 
-- **OS-driven only:** `src/styles/color-scheme-themes.scss` — light by default, dark when `prefers-color-scheme: dark`. No in-app theme control or `localStorage`; `meta name="theme-color"` uses `media` queries in `BaseLayout.astro` to match.
+- **OS-driven only:** `src/styles/color-scheme-themes.css` — light by default, dark when `prefers-color-scheme: dark`. No in-app theme toggle or `localStorage`.
 
 ## Newsletter UI
 
@@ -24,8 +24,8 @@
 ## Content rules
 
 - **Drafts** — `draft: true` in frontmatter; hidden in production via `isVisiblePost()` / `getVisiblePosts()` (LAB-20).
-- **Authoring** — `docs/authoring-posts.md` remains the how-to; [[06-Features-shipped]] links behavior to file paths.
+- **Authoring** — `docs/authoring-posts.md` remains the how-to.
 
 ## SEO / share (not all shipped)
 
-- Primary RSS is **excerpt** in `<description>` (LAB-27). Full-content feed, canonical/OG, sitemap are backlog — see [[08-Backlog-and-roadmap]].
+- Primary RSS is **excerpt** in `<description>` (LAB-27). Full-content feed and sitemap refinements remain backlog (see product notes in this vault / Linear).
