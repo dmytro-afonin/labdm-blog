@@ -1,6 +1,11 @@
 import type { APIRoute } from "astro";
+import { waitUntil } from "@vercel/functions";
 
-import { captureServerOutcome } from "../lib/posthog-server-tracking";
+import {
+  captureServerOutcome,
+  flushPostHogServer,
+} from "../lib/posthog-server-tracking";
+import { getRequestId } from "../lib/request-id";
 import { redirectUncached } from "../lib/redirect-uncached";
 
 /**
@@ -12,17 +17,28 @@ export const prerender = false;
 const PH_ROUTE = "GET /c";
 
 export const GET: APIRoute = async ({ request }) => {
-  const token = new URL(request.url).searchParams.get("token")?.trim() ?? "";
-  if (!token) {
-    await captureServerOutcome({
-      route: PH_ROUTE,
-      outcome: "missing_token",
+  const requestId = getRequestId(request);
+  try {
+    const token = new URL(request.url).searchParams.get("token")?.trim() ?? "";
+    if (!token) {
+      captureServerOutcome({
+        route: PH_ROUTE,
+        outcome: "missing_token",
+        request,
+        requestId,
+      });
+      return redirectUncached(
+        "/newsletter/confirm-invalid",
+        request,
+        requestId,
+      );
+    }
+    return redirectUncached(
+      `/api/newsletter/confirm?token=${encodeURIComponent(token)}`,
       request,
-    });
-    return redirectUncached("/newsletter/confirm-invalid", request);
+      requestId,
+    );
+  } finally {
+    waitUntil(flushPostHogServer());
   }
-  return redirectUncached(
-    `/api/newsletter/confirm?token=${encodeURIComponent(token)}`,
-    request,
-  );
 };

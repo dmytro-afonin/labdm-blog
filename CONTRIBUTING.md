@@ -17,6 +17,8 @@
 
 ## Local checks
 
+Use `bun run dev` for day-to-day work; use `bun run dev:vercel` when you need Vercel-local routing and project env (see `README.md`).
+
 Run these before opening or updating a pull request:
 
 ```bash

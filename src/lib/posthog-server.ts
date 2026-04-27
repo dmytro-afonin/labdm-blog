@@ -24,9 +24,11 @@ export function getPostHogServer(): PostHog {
 }
 
 /**
- * Flush and tear down the singleton PostHog client. Call at the end of
- * serverless requests when using non-`captureImmediate` flows or background
- * flush intervals so events are not lost between invocations.
+ * Flush and tear down the singleton PostHog client. Used by long-running
+ * scripts (newsletter sync etc.) that need to drain the in-memory queue
+ * before the process exits. Astro request handlers should prefer
+ * `flushPostHogServer()` from `posthog-server-tracking` together with
+ * Vercel's `waitUntil` so events ship without blocking the response.
  */
 export async function shutdownPostHogServer(): Promise<void> {
   if (!posthogClient) return;

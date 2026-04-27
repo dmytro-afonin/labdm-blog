@@ -22,11 +22,14 @@ bun install
 bun run dev
 ```
 
+- **`bun run dev`** — Astro dev server (default). API routes work here.
+- **`bun run dev:vercel`** — `vercel dev` with Vercel routing and env parity. The `dev` script must stay **`astro dev`** so `vercel dev` does not recurse; `vercel.json` sets `devCommand` to `bun run dev`.
+
 Useful scripts:
 
 - `bun run typecheck`
 - `bun run build`
-- `bun run preview`
+- `bun run build && bun run preview` — static server for `dist/client` (Vercel adapter output; run `build` first). Use `bun run dev` for API routes.
 - `bun run newsletter:sync`
 - `bun run newsletter:sync:report`
 
@@ -43,6 +46,9 @@ Environment variables:
 - `RESEND_FROM_EMAIL` — verified sender address for newsletter confirmation emails
 - `RESEND_WEBHOOK_SECRET`
 - `NEWSLETTER_TOKEN_SECRET`
+- `PUBLIC_POSTHOG_PROJECT_TOKEN` / `PUBLIC_POSTHOG_HOST` (optional) — server-side PostHog in API routes only; no browser SDK bundle on static pages.
+
+**Runtime:** `vercel.json` can set `regions` (e.g. `iad1`) near **Neon in `us-east-1`** to reduce DB latency. Edge middleware adds **`x-request-id`** on responses (aligned with Vercel’s id when present) for logs and PostHog.
 
 Current subscriber flows:
 
@@ -51,7 +57,10 @@ Current subscriber flows:
   until the address is verified.
 - `GET /c?token=...` (short link used in emails; redirects to the handler below)
   verifies the email address; `GET /api/newsletter/confirm?token=...` is the same
-  handler and still works for older links. Confirmed subscribers sync to Resend Contacts.
+  handler and still works for older links. Confirmation uses **one** Neon `UPDATE`
+  (subscriber id + email from the token) to set `verified_at` and return the row;
+  **Resend Contacts sync** after confirm runs in the background via `waitUntil`
+  when needed, so the redirect is not blocked on Resend.
 - `/newsletter/manage/[token]` lets a subscriber unsubscribe or re-subscribe
   via a signed management link.
 - `bun run newsletter:sync` manually pushes verified subscribers that are in a

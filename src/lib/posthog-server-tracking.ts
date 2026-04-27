@@ -21,32 +21,32 @@ export function isPostHogServerEnabled(): boolean {
   return Boolean(import.meta.env.PUBLIC_POSTHOG_PROJECT_TOKEN?.trim());
 }
 
-function sessionProps(request?: Request): { $session_id?: string } {
-  const id = request?.headers.get("X-PostHog-Session-Id");
-  return id ? { $session_id: id } : {};
-}
-
 /**
  * Structured branch / funnel step for dashboards (filter by `route` + `outcome`).
  * Prefer this for expected paths (validation failures, empty token, etc.).
+ *
+ * Synchronous: queues the event in the in-memory PostHog client. Pair with
+ * `flushPostHogServer()` (via `waitUntil`) at the end of the request handler
+ * so the queued events ship without blocking the user-facing response.
  */
-export async function captureServerOutcome(input: {
+export function captureServerOutcome(input: {
   route: string;
   outcome: string;
   request?: Request;
+  requestId?: string;
   distinctId?: string;
   properties?: Record<string, unknown>;
-}): Promise<void> {
+}): void {
   if (!isPostHogServerEnabled()) return;
   try {
-    await getPostHogServer().captureImmediate({
+    getPostHogServer().capture({
       distinctId: input.distinctId ?? POSTHOG_SERVER_DISTINCT_ID,
       event: "server_api_outcome",
       properties: {
         ...input.properties,
         route: input.route,
         outcome: input.outcome,
-        ...sessionProps(input.request),
+        ...(input.requestId ? { request_id: input.requestId } : {}),
       },
     });
   } catch (err) {
@@ -56,28 +56,48 @@ export async function captureServerOutcome(input: {
 
 /**
  * Sends an error to PostHog Error tracking (`$exception`). Use in `catch` blocks.
+ *
+ * Synchronous: queues the event in the in-memory PostHog client. Pair with
+ * `flushPostHogServer()` (via `waitUntil`) at the end of the request handler.
  */
-export async function captureServerException(input: {
+export function captureServerException(input: {
   error: unknown;
   route: string;
   branch: string;
   request?: Request;
+  requestId?: string;
   distinctId?: string;
   extra?: Record<string, unknown>;
-}): Promise<void> {
+}): void {
   if (!isPostHogServerEnabled()) return;
   try {
-    await getPostHogServer().captureExceptionImmediate(
+    getPostHogServer().captureException(
       input.error,
       input.distinctId ?? POSTHOG_SERVER_DISTINCT_ID,
       {
         ...input.extra,
         route: input.route,
         branch: input.branch,
-        ...sessionProps(input.request),
+        ...(input.requestId ? { request_id: input.requestId } : {}),
       },
     );
   } catch (err) {
     console.warn("[posthog] captureServerException failed", err);
+  }
+}
+
+/**
+ * Flush queued PostHog events. Returns a promise that resolves once the
+ * background HTTP request finishes; intended to be passed to Vercel's
+ * `waitUntil` so the response is not blocked while events are shipped.
+ *
+ * Errors are swallowed (logged) — telemetry must never fail a request.
+ */
+export async function flushPostHogServer(): Promise<void> {
+  if (!isPostHogServerEnabled()) return;
+  try {
+    await getPostHogServer().flush();
+  } catch (err) {
+    console.warn("[posthog] flush failed", err);
   }
 }

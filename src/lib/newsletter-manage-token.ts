@@ -50,7 +50,9 @@ export function verifyNewsletterManageToken(
   const expected = Buffer.from(expectedSignature, "utf8");
 
   if (actual.length !== expected.length) return null;
-  if (!timingSafeEqual(actual, expected)) return null;
+  if (!timingSafeEqual(new Uint8Array(actual), new Uint8Array(expected))) {
+    return null;
+  }
 
   try {
     const decoded = Buffer.from(encodedPayload, "base64url").toString("utf8");

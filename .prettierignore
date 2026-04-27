@@ -5,3 +5,6 @@ node_modules
 
 # PostHog wizard / Claude skill bundle (not maintained to repo Prettier rules)
 .claude/skills/integration-astro-hybrid/
+
+# Obsidian app data and plugin bundles (not maintained to Prettier; avoid churn)
+obsidian-docs/.obsidian/

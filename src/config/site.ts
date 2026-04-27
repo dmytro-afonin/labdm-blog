@@ -1,5 +1,3 @@
-import { palette } from "./palette";
-
 export type SocialNetwork = "linkedin" | "x" | "github";
 
 /** Canonical order + labels for {@link siteConfig.socialLinks} keys. */
@@ -17,14 +15,10 @@ export const siteConfig = {
   /** Masthead: uppercase name row + tagline (Olive layout). */
   mastName: "Dmytro Afonin",
   mastTagline: "Thoughts about tech and development",
-  /**
-   * Browser chrome / PWA tint. Keep the active favicon background (e.g.
-   * `public/favicon.svg`) in sync with `palette["theme-green"]`
-   * in `src/config/palette.ts`.
-   */
-  themeColor: palette["theme-green"],
   title: "Dmytro Afonin — labdm blog",
   description: "Thoughts about tech and development",
+  /** Used in RSS/Atom `&lt;copyright&gt;` (year is added at build time). */
+  copyrightOwner: "Dmytro Afonin",
   url: "https://blog.labdm.dev",
   lang: "en",
   feeds: [

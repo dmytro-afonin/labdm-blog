@@ -2,16 +2,17 @@
 import RssLink from "../components/RssLink.astro";
 import SocialLinks from "../components/SocialLinks.astro";
 import SubscribeForm from "../components/SubscribeForm.astro";
-import ThemeSwitcher from "../components/ThemeSwitcher.astro";
-import PostHog from "../components/posthog.astro";
-import { COLOR_SCHEME_STORAGE_KEY } from "../config/theme";
 import { absoluteUrl, getPageTitle, siteConfig } from "../config/site";
-import "../styles/color-scheme-themes.scss";
+import "../styles/color-scheme-themes.css";
 
 interface Props {
   title?: string;
   description?: string;
-  canonicalPath?: string;
+  /**
+   * Required so prerender never touches `Astro.url` / `Astro.request` (Astro warns
+   * when `Astro.request.headers` is read during SSG — there is no real HTTP request).
+   */
+  canonicalPath: string;
   ogType?: "website" | "article";
   noIndex?: boolean;
 }
@@ -19,7 +20,7 @@ interface Props {
 const {
   title,
   description = siteConfig.description,
-  canonicalPath = Astro.url.pathname,
+  canonicalPath,
   ogType = "website",
   noIndex = false,
 } = Astro.props;
@@ -37,52 +38,24 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content={siteConfig.themeColor} />
-    <script is:inline define:vars={{ colorSchemeKey: COLOR_SCHEME_STORAGE_KEY }}
-    >
-      (function () {
-        function applyDataColorScheme(pref) {
-          if (pref === "light" || pref === "dark") {
-            document.documentElement.setAttribute("data-color-scheme", pref);
-          } else {
-            document.documentElement.removeAttribute("data-color-scheme");
-          }
-        }
-        function metaResolved(pref) {
-          if (pref === "light" || pref === "dark") return pref;
-          return window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-        }
-        try {
-          const raw = localStorage.getItem(colorSchemeKey);
-          const pref =
-            raw === "light" || raw === "dark" || raw === "system"
-              ? raw
-              : "system";
-          applyDataColorScheme(pref);
-          const meta = document.querySelector('meta[name="theme-color"]');
-          if (meta)
-            meta.setAttribute(
-              "content",
-              metaResolved(pref) === "light" ? "#ebe6dc" : "#353a34",
-            );
-        } catch {
-          document.documentElement.removeAttribute("data-color-scheme");
-          const meta = document.querySelector('meta[name="theme-color"]');
-          if (meta)
-            meta.setAttribute(
-              "content",
-              window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "#353a34"
-                : "#ebe6dc",
-            );
-        }
-      })();
-    </script>
-    <PostHog />
+    <meta
+      name="theme-color"
+      content="#ebe6dc"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#353a34"
+      media="(prefers-color-scheme: dark)"
+    />
     <meta name="generator" content={Astro.generator} />
+    <link rel="preload" href="/favicon.svg" as="image" type="image/svg+xml" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
@@ -110,87 +83,34 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
     }
 
     <style is:global>
-      /*
-       * Do not use `define:vars={palette}` here: Astro injects those as inline `style` on
-       * `html` / descendants, which overrides `html[data-color-scheme]` from this sheet and
-       * breaks light theme. Primitives from `src/config/palette.ts` live in `:root` below.
-       */
-      /* stylelint-disable selector-class-pattern, no-descending-specificity -- BEM blocks */
+      /* stylelint-disable selector-class-pattern, no-descending-specificity */
+
       :root {
-        /* Static brand ingredients (see palette.ts); theme sets semantic tokens on `html`. */
-        --theme-green: #353a34;
-        --accent-mustard: #c9a86a;
-        --additional-red: #a6756a;
-        --terra-soft: #e8cfc8;
-        --radius-code: 0.55rem;
-
-        --radius-card: 1.35rem;
-        --radius-pill: 0.35rem;
-
-        /** Mast: theme switcher, social chips, RSS — shared size + corner radius (matches cards / post pagination). */
-        --mast-tool-height: 2.35rem;
-        --mast-tool-radius: var(--radius-card);
-
-        /** Keyboard focus ring thickness (see shared :focus-visible rules below). */
-        --focus-ring-width: 2px;
-
-        --theme-shift-duration: 0.32s;
-
-        --font-sans:
-          system-ui, -apple-system, blinkmacsystemfont, "Segoe UI", roboto,
-          oxygen, ubuntu, cantarell, sans-serif;
-        --font-serif:
-          ui-serif, georgia, cambria, "Times New Roman", times, serif;
-        --font-mono:
-          ui-monospace, sfmono-regular, menlo, monaco, consolas,
-          "Liberation Mono", "Courier New", monospace;
+        --font-serif: ui-serif, georgia, serif;
+        --font-mono: ui-monospace, menlo, monospace;
       }
 
-      * {
+      *,
+      *::before,
+      *::after {
         box-sizing: border-box;
       }
 
       html {
+        background: var(--bg);
         font-size: 106.25%;
         overflow-x: hidden;
-
-        /* Fills iOS safe areas behind notch / home indicator (pairs with viewport-fit=cover). */
-        background-color: var(--page-a);
-        min-height: 100%;
-        min-height: -webkit-fill-available;
       }
 
       body {
         margin: 0;
-
-        /* 100vh is taller than the visible viewport on mobile Safari → phantom scroll; dvh tracks the real viewport. */
-        min-height: 100vh;
         min-height: 100dvh;
-        min-height: -webkit-fill-available;
-        font-family: var(--font-sans);
+        display: flex;
+        flex-direction: column;
+        font:
+          1rem/1.55 system-ui,
+          sans-serif;
         color: var(--text);
-        background-color: var(--page-a);
-        line-height: 1.52;
-      }
-
-      @media (prefers-reduced-motion: no-preference) {
-        body {
-          transition:
-            color var(--theme-shift-duration) cubic-bezier(0.33, 1, 0.68, 1),
-            background var(--theme-shift-duration)
-              cubic-bezier(0.33, 1, 0.68, 1);
-        }
-
-        /**
-         * Theme tokens on `html` (explicit attribute or `prefers-color-scheme` when omitted).
-         */
-        html body * {
-          transition-property:
-            color, background-color, background-image, border-color, box-shadow,
-            fill, stroke, text-decoration-color, outline-color;
-          transition-duration: var(--theme-shift-duration);
-          transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
-        }
       }
 
       h1,
@@ -199,518 +119,539 @@ const rssFeed = siteConfig.feeds?.[0] ?? null;
       h4 {
         font-family: var(--font-serif);
         font-weight: 600;
-        color: var(--text-primary);
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      /* —— Layout: page width + main flow —— */
+      .mast,
+      main,
+      .footer {
+        width: min(56rem, calc(100% - 2rem));
+        margin-inline: auto;
       }
 
       main {
-        width: min(56rem, calc(100% - 2rem));
-        margin: 0 auto;
+        flex: 1;
         padding: 1rem 0 6rem;
+        min-width: 0;
       }
 
-      /* Lower max-width = desktop mast longer; mobile only on narrower viewports. */
-      @media (width <= 40rem) {
-        main {
-          padding-top: 0.75rem;
-        }
-      }
-
-      /**
-       * Simple text pages whose main content is a leading h1 + paragraphs (e.g. newsletter states).
-       * Scoped to direct children so post/tag listings with back-links or sections are unaffected.
-       */
-      main > h1:first-child {
+      main > h1 {
         margin: 0 0 1rem;
         font-size: clamp(1.35rem, 3vw, 1.75rem);
       }
 
       main > p {
         margin: 0 0 1rem;
-        color: var(--body-copy);
-        line-height: 1.65;
         max-width: 36rem;
-      }
-
-      main > p:last-child {
-        margin-bottom: 0;
+        color: var(--muted);
+        line-height: 1.65;
       }
 
       main > p > a {
-        color: var(--color-accent);
         text-decoration: underline;
         text-underline-offset: 0.2em;
       }
 
-      main > p > a:hover {
-        color: var(--accent-soft);
-      }
-
-      /* —— Mast (header): two bands — top bar, then subscribe + meta —— */
-      .site-mast {
-        width: min(56rem, calc(100% - 2rem));
-        margin: 0 auto;
-        padding: 1.75rem 0 0;
+      /* —— Mast (header) —— */
+      .mast {
+        padding-top: 1.75rem;
         display: flex;
         flex-direction: column;
-        align-items: stretch;
-        gap: 0.85rem;
+        align-items: center;
+        gap: 1rem;
+        text-align: center;
       }
 
-      .site-mast__top {
-        display: flex;
-        flex-wrap: nowrap;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 1rem 1.25rem;
-        width: 100%;
-        min-width: 0;
-      }
-
-      .site-mast__column {
-        flex: 1 1 min(0, 100%);
-        min-width: 0;
-      }
-
-      .site-mast__brand {
+      .mast__brand {
         display: flex;
         align-items: center;
         gap: 1.15rem;
-        text-decoration: none;
         color: inherit;
+        text-decoration: none;
         min-width: 0;
       }
 
-      /**
-       * Subscribe strip: form and meta share one flex row on wide screens.
-       * On narrow screens we stack (column) but never use flex-grow — that was causing huge gaps.
-       */
-      .site-mast__subscribe-wrap {
-        width: 100%;
-        min-width: 0;
-        padding-top: 0.35rem;
+      .mast__brand > div {
+        text-align: left;
       }
 
-      .site-mast__below {
-        display: flex;
-        flex-flow: row wrap;
-        align-items: flex-start;
-        gap: 0.45rem 0.65rem;
-        width: 100%;
-        min-width: 0;
-      }
-
-      .site-mast__below > .subscribe-form {
-        flex: 0 1 22rem;
-        max-width: 22rem;
-        width: min(100%, 22rem);
-      }
-
-      .site-mast__meta {
-        display: flex;
-        flex-flow: row wrap;
-        align-items: center;
-        gap: 0.45rem 0.65rem;
-        min-width: 0;
-
-        /* Take remaining width so margin-left: auto on socials hits the true right */
-        flex: 1 1 10rem;
-      }
-
-      .site-mast__meta > .site-social {
-        margin-left: auto;
-        flex: 0 0 auto;
-      }
-
-      .site-mast__meta > .site-mast__rss {
-        flex: 0 0 auto;
-      }
-
-      .site-mast__logo-wrap {
-        display: block;
+      .mast__logo {
         width: 4.75rem;
         height: 4.75rem;
         flex-shrink: 0;
-        overflow: hidden;
         border-radius: 50%;
-        background-color: var(--page-a);
+        animation: spin 32s linear infinite;
       }
 
-      @keyframes site-mast-logo-spin {
+      @keyframes spin {
         to {
           transform: rotate(360deg);
         }
       }
 
-      .site-mast__logo {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        object-position: center;
-        animation: site-mast-logo-spin 32s linear infinite;
-      }
-
       @media (prefers-reduced-motion: reduce) {
-        .site-mast__logo {
+        .mast__logo {
           animation: none;
         }
       }
 
-      .site-mast__text {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        min-height: 4.75rem;
-        max-width: min(36rem, 100%);
-      }
-
-      .site-mast__name {
+      .mast__name {
         margin: 0 0 0.4rem;
-        font-family: var(--font-sans);
         font-size: clamp(1.1rem, 2.45vw, 1.38rem);
         font-weight: 700;
         letter-spacing: 0.16em;
         text-transform: uppercase;
         line-height: 1.1;
-        color: var(--color-text);
       }
 
-      .site-mast__desc {
+      .mast__tagline {
         margin: 0;
+        color: var(--muted);
         font-size: 0.95rem;
-        line-height: 1.52;
-        color: var(--mast-desc);
       }
 
-      .site-mast__rss {
-        box-sizing: border-box;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.35rem;
-        height: var(--mast-tool-height);
-        min-height: var(--mast-tool-height);
-        padding: 0 0.65rem;
-        font-size: 0.82rem;
-        line-height: 1;
-        color: var(--rss-fg);
-        text-decoration: none;
-        border-radius: var(--mast-tool-radius);
-        border: 1px solid var(--rss-border);
-        background: var(--rss-bg);
-      }
-
-      .site-mast__rss:hover {
-        color: var(--color-accent);
-        border-color: var(--rss-hover-border);
-      }
-
-      /**
-       * Single accent focus ring site-wide. Prefer box-shadow over outline so the ring
-       * follows border-radius (Subscribe pill, post titles, pills, etc.).
-       */
-      .site-mast__brand:focus-visible,
-      .site-mast__rss:focus-visible,
-      .post-card__title a:focus-visible,
-      .post-card__tags a:focus-visible,
-      .post-card__view:focus-visible,
-      .theme-dd__trigger:focus-visible,
-      .theme-dd__opt:focus-visible,
-      .site-social .site-social__a:focus-visible,
-      .back-link:focus-visible,
-      .prose a:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 var(--focus-ring-width) var(--accent);
-      }
-
-      .site-mast__brand:focus-visible {
-        border-radius: 0.25rem;
-      }
-
-      .post-card__title a:focus-visible,
-      .prose a:focus-visible {
-        border-radius: 0.12em;
-      }
-
-      .post-card__tags a:focus-visible {
-        border-radius: 2px;
-      }
-
-      .back-link:focus-visible {
-        border-radius: 0.15rem;
-      }
-
-      .site-mast__tools {
-        position: relative;
+      .mast__row {
         display: flex;
         align-items: center;
-        justify-content: flex-end;
-        flex: 0 0 auto;
-        align-self: flex-start;
-
-        /* Slot for theme control: trigger uses --mast-tool-height + 0.42rem padding each side */
-        min-width: calc(var(--mast-tool-height) + 0.84rem);
-        min-height: var(--mast-tool-height);
+        justify-content: center;
+        gap: 0.75rem;
+        width: 100%;
+        max-width: 26rem;
       }
 
-      @media (width <= 40rem) {
-        .site-mast {
-          gap: 0.5rem;
-        }
-
-        .site-mast__logo-wrap {
-          width: 3.5rem;
-          height: 3.5rem;
-        }
-
-        .site-mast__text {
-          min-height: 3.5rem;
-        }
-
-        .site-mast__brand {
-          gap: 0.85rem;
-        }
-
-        .site-mast__subscribe-wrap {
-          padding-top: 0.2rem;
-        }
-
-        .site-mast__below {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 0.45rem;
-        }
-
-        .site-mast__below > .subscribe-form {
-          align-self: stretch;
-          flex: 0 0 auto;
-          width: 100%;
-          max-width: none;
-          min-width: 0;
-        }
-
-        /* RSS left, socials right — single short row; no flex-grow */
-        .site-mast__meta {
-          flex: 0 0 auto;
-          flex-flow: row nowrap;
-          justify-content: space-between;
-          align-items: center;
-          width: 100%;
-          gap: 0.5rem;
-        }
-
-        .site-mast__meta > .site-social {
-          margin-left: 0;
-        }
-
-        /* Meta only contains socials (no RSS feed): keep chips on the right */
-        .site-mast__meta:not(:has(.site-mast__rss)) {
-          justify-content: flex-end;
-        }
+      .mast__rss {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        height: 2.35rem;
+        padding: 0 0.85rem;
+        border: 1px solid var(--rule);
+        border-radius: 1.35rem;
+        background: var(--surface);
+        color: var(--meta);
+        font-size: 0.82rem;
+        text-decoration: none;
       }
 
-      /* —— Index / tag post cards (Olive) —— */
+      .mast__rss:hover {
+        color: var(--accent);
+      }
+
+      .rss-icon {
+        width: 1.05em;
+        height: 1.05em;
+      }
+
+      /* —— Subscribe form —— */
+      .subscribe {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 22rem;
+        display: flex;
+        height: 2.35rem;
+        border: 1px solid var(--rule);
+        border-radius: 1.35rem;
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .subscribe__input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        border-radius: 1.35rem 0 0 1.35rem;
+        background: transparent;
+        padding: 0 1rem;
+        font: inherit;
+        font-size: 0.85rem;
+        color: var(--text);
+        outline: 0;
+      }
+
+      .subscribe__input::placeholder {
+        color: var(--meta);
+      }
+
+      .subscribe__btn {
+        border: 0;
+        border-left: 1px solid var(--rule);
+        border-radius: 0 1.35rem 1.35rem 0;
+        background: transparent;
+        padding: 0 1rem;
+        font: inherit;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .subscribe__btn:hover {
+        background: var(--rule);
+        color: var(--accent);
+      }
+
+      /* `.subscribe` uses `overflow: hidden` for the rounded pill, which clips
+       * the site-wide outer focus ring. Use an inset ring on the input + button
+       * so it stays visible inside the clipped container. */
+      .subscribe__input:focus-visible,
+      .subscribe__btn:focus-visible {
+        outline: 0;
+        box-shadow: inset 0 0 0 2px var(--accent);
+      }
+
+      .subscribe__hp {
+        position: absolute;
+        left: -9999px;
+        opacity: 0;
+      }
+
+      /* —— Footer —— */
+      .footer {
+        margin-top: clamp(2rem, 5vw, 3rem);
+        padding-bottom: 2.5rem;
+      }
+
+      .social {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem 1.25rem;
+        font-size: 0.9rem;
+      }
+
+      .social a {
+        text-decoration: none;
+      }
+
+      .social a:hover {
+        text-decoration: underline;
+      }
+
+      /* —— One site-wide focus ring —— */
+      :focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 2px var(--accent);
+      }
+
+      a:focus-visible {
+        border-radius: 0.18em;
+      }
+
+      /* —— Post feed (home + tag pages) ——
+       * Mobile: single column stack (title → excerpt → meta → tags).
+       * ≥48rem (medium): 2×2 grid — title+excerpt on the left, meta+tags on the right.
+       */
       .post-feed {
         list-style: none;
         margin: 0;
         padding: 0;
-        display: grid;
-        gap: 1rem;
       }
 
-      .post-card {
-        padding: 1.35rem 1.45rem 1.2rem;
-        border-radius: 1.35rem;
-        border: 1px solid var(--border);
-        background: linear-gradient(
-          145deg,
-          var(--post-card-a),
-          var(--post-card-b)
-        );
-        box-shadow: var(--elev-shadow);
+      .post-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 0.85rem 0;
+        line-height: 1.4;
       }
 
-      .post-card__title {
-        margin: 0 0 0.65rem;
-        font-family: var(--font-serif);
-        font-size: clamp(1.28rem, 2.6vw, 1.62rem);
-        font-weight: 600;
-        line-height: 1.22;
-        color: var(--text-primary);
+      .post-row__title {
+        margin: 0;
+        font: 500 1.1rem/1.32 var(--font-serif);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.5rem 0.7rem;
       }
 
-      .post-card__title a {
-        color: var(--text-primary);
+      .post-row__title a {
+        color: var(--text);
         text-decoration: none;
       }
 
-      .post-card__title a:hover {
-        color: var(--color-accent);
+      .post-row__title a:hover {
+        color: var(--accent-soft);
       }
 
-      .post-card__excerpt {
-        margin: 0 0 1.2rem;
-        font-size: 1rem;
-        line-height: 1.68;
-        color: var(--excerpt-fg);
-        display: -webkit-box;
-        -webkit-line-clamp: 6;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+      .post-row__draft {
+        font-size: 0.78em;
+        color: var(--accent);
       }
 
-      .post-card__tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.55rem;
-        list-style: none;
-        margin: 0 0 1rem;
-        padding: 0;
+      .post-excerpt {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.55;
       }
 
-      .post-card__tags a {
-        font-size: 0.76rem;
-        font-weight: 500;
-        letter-spacing: 0.07em;
-        text-transform: uppercase;
-        padding: 0.15rem 0;
-        border: none;
-        border-radius: 0;
-        color: var(--tag-fg);
-        text-decoration: underline;
-        text-decoration-color: var(--tag-decor);
-        text-decoration-thickness: 1px;
-        text-underline-offset: 0.22em;
-        background: none;
-        transition:
-          color 0.15s ease,
-          text-decoration-color 0.15s ease;
+      @media (width >= 48rem) {
+        .post-row {
+          display: grid;
+          grid-template-columns: minmax(8rem, 13rem) 1fr;
+          grid-template-areas:
+            "meta title"
+            "tags excerpt";
+          gap: 0.4rem 1.5rem;
+          align-items: baseline;
+        }
+
+        .post-row__title {
+          grid-area: title;
+        }
+
+        .post-excerpt {
+          grid-area: excerpt;
+        }
+
+        .post-row__meta {
+          grid-area: meta;
+          justify-self: end;
+        }
+
+        .post-tags {
+          grid-area: tags;
+          justify-self: end;
+        }
       }
 
-      .post-card__tags a:hover {
-        color: var(--tag-hover-fg);
-        text-decoration-color: var(--tag-hover-decor);
+      /* —— Shared monospace meta text (dates, crumbs, labels, tags) —— */
+      .post-row__meta,
+      .post-tags,
+      .post-crumbs,
+      .post-pagination__label {
+        font-family: var(--font-mono);
+        color: var(--meta);
       }
 
-      .post-card__bar {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 0.65rem 1rem;
-      }
-
-      .post-card__actions {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .post-card__view {
+      .post-row__meta {
         display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.78rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--post-card-view-fg);
-        text-decoration: none;
-        padding: 0.48rem 1.1rem;
-        border-radius: 999px;
-        border: 1px solid var(--post-card-view-border);
-        background: var(--post-card-view-bg);
-        box-shadow: none;
-        transition:
-          background 0.15s ease,
-          color 0.15s ease,
-          border-color 0.15s ease;
-      }
-
-      .post-card__view:hover {
-        color: var(--post-card-view-hover-fg);
-        background: var(--post-card-view-hover-bg);
-      }
-
-      .post-card__draft {
+        flex-wrap: wrap;
+        gap: 0.35rem;
         font-size: 0.8rem;
-        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .post-row__meta > span[aria-hidden] {
+        opacity: 0.5;
+      }
+
+      .post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem 0.85rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: 0.74rem;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-        padding: 0.35rem 0.55rem;
-        border-radius: var(--radius-pill);
-        color: var(--post-card-draft-fg);
-        background: var(--post-card-draft-bg);
-        border: 1px solid var(--post-card-draft-border);
       }
 
-      .post-card__meta {
+      .post-tags a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .post-tags a:hover {
+        color: var(--accent-soft);
+      }
+
+      /* —— Single post —— */
+      .post-header {
+        margin-bottom: 2.25rem;
+      }
+
+      .post-crumbs {
+        margin: 0 0 1.4rem;
+        font-size: 0.78rem;
+      }
+
+      .post-crumbs__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
-        gap: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-        line-height: 1.45;
-        color: var(--meta-fg);
+        align-items: baseline;
+        gap: 0.35rem 0.6rem;
       }
 
-      .post-card__date time {
-        margin-left: 0.18rem;
-        font-variant-numeric: tabular-nums;
+      .post-crumbs__item {
+        display: inline-flex;
+        align-items: baseline;
+      }
+
+      .post-crumbs__item:not(:last-child)::after {
+        content: "/";
+        margin-inline-start: 0.6rem;
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .post-crumbs a {
+        color: var(--accent-soft);
+        text-decoration: none;
+      }
+
+      .post-crumbs a:hover {
+        text-decoration: underline;
+      }
+
+      .post-title {
+        margin: 0 0 0.85rem;
+        font: 500 clamp(1.85rem, 5.4vw, 2.55rem) / 1.06 var(--font-serif);
+        letter-spacing: -0.014em;
+        color: var(--text);
+      }
+
+      .post-lede {
+        margin: 0 0 1.4rem;
+        max-width: 38rem;
+        color: var(--muted);
+        font-size: 1.1rem;
+        line-height: 1.6;
+      }
+
+      /* —— Prose: rendered markdown —— */
+      .prose {
+        font-size: 1.04rem;
+        line-height: 1.78;
+      }
+
+      .prose a {
+        color: var(--accent-soft);
+        font-weight: 600;
+        text-underline-offset: 0.18em;
+      }
+
+      .prose a:hover {
+        color: var(--text);
+      }
+
+      .prose p,
+      .prose ul,
+      .prose ol,
+      .prose blockquote,
+      .prose pre {
+        margin: 0 0 1.1rem;
+      }
+
+      .prose h2,
+      .prose h3,
+      .prose h4 {
+        margin: 1.85rem 0 0.85rem;
+        line-height: 1.22;
+      }
+
+      .prose code {
+        font-family: var(--font-mono);
+      }
+
+      .prose pre {
+        overflow-x: auto;
+        padding: 1rem;
+        border-radius: 0.55rem;
+        background: var(--code-bg);
+      }
+
+      .prose blockquote {
+        padding-left: 1rem;
+        border-left: 2px solid var(--accent);
+        color: var(--muted);
+      }
+
+      /* —— Pagination —— */
+      .post-pagination {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem 1.5rem;
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--rule);
+      }
+
+      .post-pagination a {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
         color: inherit;
+        text-decoration: none;
+      }
+
+      .post-pagination__link--next {
+        grid-column: 2;
+        text-align: right;
+      }
+
+      .post-pagination__label {
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .post-pagination__title {
+        font: 500 1rem/1.32 var(--font-serif);
+        color: var(--accent-soft);
+      }
+
+      .post-pagination a:hover .post-pagination__title {
+        text-decoration: underline;
+      }
+
+      @media (width <= 38rem) {
+        .post-pagination {
+          grid-template-columns: 1fr;
+        }
+
+        .post-pagination__link--next {
+          grid-column: auto;
+          text-align: left;
+        }
       }
 
       .visually-hidden {
         position: absolute;
         width: 1px;
         height: 1px;
-        padding: 0;
         margin: -1px;
         overflow: hidden;
         clip-path: inset(50%);
         white-space: nowrap;
-        border: 0;
       }
     </style>
   </head>
   <body>
-    <header>
-      <div class="site-mast">
-        <div class="site-mast__top">
-          <div class="site-mast__column">
-            <a class="site-mast__brand" href="/">
-              <span class="site-mast__logo-wrap">
-                <img
-                  class="site-mast__logo"
-                  src="/favicon.svg"
-                  alt=""
-                  width="76"
-                  height="76"
-                  decoding="async"
-                />
-              </span>
-              <div class="site-mast__text">
-                <p class="site-mast__name">{siteConfig.mastName}</p>
-                <p class="site-mast__desc">{siteConfig.mastTagline}</p>
-              </div>
-            </a>
-          </div>
-          <div class="site-mast__tools">
-            <ThemeSwitcher />
-          </div>
+    <header class="mast">
+      <a class="mast__brand" href="/">
+        <img
+          class="mast__logo"
+          src="/favicon.svg"
+          alt=""
+          width="76"
+          height="76"
+          decoding="async"
+          fetchpriority="low"
+        />
+        <div>
+          <p class="mast__name">{siteConfig.mastName}</p>
+          <p class="mast__tagline">{siteConfig.mastTagline}</p>
         </div>
-        <div class="site-mast__subscribe-wrap">
-          <div class="site-mast__below">
-            <SubscribeForm />
-            <div class="site-mast__meta">
-              {rssFeed && <RssLink path={rssFeed.path} type={rssFeed.type} />}
-              <SocialLinks />
-            </div>
-          </div>
-        </div>
+      </a>
+      <div class="mast__row">
+        <SubscribeForm />
+        {rssFeed && <RssLink path={rssFeed.path} type={rssFeed.type} />}
       </div>
     </header>
     <slot />
+    <footer class="footer">
+      <SocialLinks />
+    </footer>
   </body>
 </html>

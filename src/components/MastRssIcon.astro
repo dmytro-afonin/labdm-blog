@@ -1,38 +1,22 @@
 ---
 /**
- * Decorative RSS glyph (`aria-hidden` on the inner graphic).
- * Callers must provide the feed purpose for assistive tech: use visible “RSS” text
- * beside this icon and/or `aria-label` on the enclosing `<a>`.
- *
- * Dot + arcs; inherits `currentColor`. Stroke reads clearly at mast size.
+ * Decorative RSS glyph (`aria-hidden`). Inherits `currentColor`. Sizing in BaseLayout.
+ * Callers must provide accessible text (visible label and/or aria-label).
  */
 ---
 
-<span class="mast-rss-icon" aria-hidden="true">
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    focusable="false"
-  >
-    <path
-      d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"></path>
-    <circle cx="5" cy="19" r="1.5" fill="currentColor"></circle>
-  </svg>
-</span>
-
-<style is:global>
-  .mast-rss-icon {
-    display: inline-flex;
-    align-items: center;
-    line-height: 0;
-  }
-
-  .mast-rss-icon svg {
-    width: 1.05em;
-    height: 1.05em;
-  }
-</style>
+<svg
+  class="rss-icon"
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  fill="none"
+  focusable="false"
+  aria-hidden="true"
+>
+  <path
+    d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"></path>
+  <circle cx="5" cy="19" r="1.5" fill="currentColor"></circle>
+</svg>

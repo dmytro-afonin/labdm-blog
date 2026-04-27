@@ -1,7 +1,10 @@
 import type { APIRoute } from "astro";
+import { waitUntil } from "@vercel/functions";
+
 import {
   isValidNewsletterEmail,
   normalizeNewsletterEmail,
+  runNewsletterSubscribeSideEffects,
   subscribeNewsletterEmail,
   type NewsletterSubscriptionResult,
 } from "../../lib/newsletter";
@@ -9,10 +12,17 @@ import { isDatabaseConfigured } from "../../lib/neon";
 import {
   captureServerException,
   captureServerOutcome,
+  flushPostHogServer,
   isPostHogServerEnabled,
   posthogDistinctIdFromEmail,
 } from "../../lib/posthog-server-tracking";
 import { getPostHogServer } from "../../lib/posthog-server";
+import {
+  getRequestId,
+  requestLogPrefix,
+  withRequestId,
+} from "../../lib/request-id";
+import { totalTiming, type Timings } from "../../lib/timing";
 
 const PH_ROUTE = "POST /api/subscribe";
 
@@ -25,99 +35,141 @@ const SUBSCRIBE_RESULT_EVENTS = {
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, redirect }) => {
-  if (!isDatabaseConfigured()) {
-    await captureServerOutcome({
-      route: PH_ROUTE,
-      outcome: "database_not_configured",
-      request,
-    });
-    return redirect("/newsletter/error");
-  }
-
-  const contentType = request.headers.get("content-type") ?? "";
-  if (
-    !contentType.includes("application/x-www-form-urlencoded") &&
-    !contentType.includes("multipart/form-data")
-  ) {
-    await captureServerOutcome({
-      route: PH_ROUTE,
-      outcome: "invalid_content_type",
-      request,
-    });
-    return redirect("/newsletter/invalid");
-  }
-
-  let formData: FormData;
+  const requestId = getRequestId(request);
   try {
-    formData = await request.formData();
-  } catch (error) {
-    await captureServerException({
-      error,
-      route: PH_ROUTE,
-      branch: "formdata_parse_failed",
-      request,
-    });
-    return redirect("/newsletter/invalid");
-  }
+    if (!isDatabaseConfigured()) {
+      captureServerOutcome({
+        route: PH_ROUTE,
+        outcome: "database_not_configured",
+        request,
+        requestId,
+      });
+      return withRequestId(redirect("/newsletter/error"), requestId);
+    }
 
-  const honeypot = formData.get("company");
-  if (typeof honeypot === "string" && honeypot.trim() !== "") {
-    await captureServerOutcome({
-      route: PH_ROUTE,
-      outcome: "honeypot_triggered",
-      request,
-    });
-    return redirect("/newsletter/check-inbox");
-  }
-  const raw = formData.get("email");
-  const email = typeof raw === "string" ? normalizeNewsletterEmail(raw) : "";
-  if (!email || !isValidNewsletterEmail(email)) {
-    await captureServerOutcome({
-      route: PH_ROUTE,
-      outcome: "invalid_email",
-      request,
-    });
-    return redirect("/newsletter/invalid");
-  }
+    const contentType = request.headers.get("content-type") ?? "";
+    if (
+      !contentType.includes("application/x-www-form-urlencoded") &&
+      !contentType.includes("multipart/form-data")
+    ) {
+      captureServerOutcome({
+        route: PH_ROUTE,
+        outcome: "invalid_content_type",
+        request,
+        requestId,
+      });
+      return withRequestId(redirect("/newsletter/invalid"), requestId);
+    }
 
-  try {
-    const result = await subscribeNewsletterEmail(email);
-    const sessionId = request.headers.get("X-PostHog-Session-Id") ?? undefined;
-    const distinctId = posthogDistinctIdFromEmail(email);
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (error) {
+      captureServerException({
+        error,
+        route: PH_ROUTE,
+        branch: "formdata_parse_failed",
+        request,
+        requestId,
+      });
+      return withRequestId(redirect("/newsletter/invalid"), requestId);
+    }
 
-    if (isPostHogServerEnabled()) {
-      try {
-        const eventName = SUBSCRIBE_RESULT_EVENTS[result];
-        const posthog = getPostHogServer();
-        await posthog.captureImmediate({
-          distinctId,
-          event: eventName,
-          ...(sessionId ? { properties: { $session_id: sessionId } } : {}),
-        });
-      } catch (phErr) {
-        console.warn("[posthog] newsletter_subscribed capture failed", phErr);
+    const honeypot = formData.get("company");
+    if (typeof honeypot === "string" && honeypot.trim() !== "") {
+      captureServerOutcome({
+        route: PH_ROUTE,
+        outcome: "honeypot_triggered",
+        request,
+        requestId,
+      });
+      return withRequestId(redirect("/newsletter/check-inbox"), requestId);
+    }
+    const raw = formData.get("email");
+    const email = typeof raw === "string" ? normalizeNewsletterEmail(raw) : "";
+    if (!email || !isValidNewsletterEmail(email)) {
+      captureServerOutcome({
+        route: PH_ROUTE,
+        outcome: "invalid_email",
+        request,
+        requestId,
+      });
+      return withRequestId(redirect("/newsletter/invalid"), requestId);
+    }
+
+    const timings: Timings = {};
+    const handlerStart = performance.now();
+    try {
+      const { result, subscriber } = await subscribeNewsletterEmail(
+        email,
+        timings,
+      );
+      const handlerMs = Math.round(performance.now() - handlerStart);
+      const dbMs = totalTiming(timings);
+
+      waitUntil(
+        runNewsletterSubscribeSideEffects(result, subscriber).catch((err) => {
+          console.error(
+            requestLogPrefix(requestId),
+            "[subscribe] background side effects failed",
+            err,
+          );
+        }),
+      );
+      if (import.meta.env.DEV) {
+        console.log(
+          `${requestLogPrefix(requestId)} [timing] POST /api/subscribe: result=${result} total=${handlerMs}ms steps=${dbMs}ms`,
+          timings,
+        );
       }
-    }
 
-    if (result === "check-inbox") {
-      return redirect("/newsletter/check-inbox");
+      if (isPostHogServerEnabled()) {
+        try {
+          getPostHogServer().capture({
+            distinctId: posthogDistinctIdFromEmail(email),
+            event: SUBSCRIBE_RESULT_EVENTS[result],
+            properties: {
+              request_id: requestId,
+              subscribe_total_ms: handlerMs,
+              subscribe_steps_ms_total: dbMs,
+              subscribe_timings_ms: timings,
+            },
+          });
+        } catch (phErr) {
+          console.warn(
+            `${requestLogPrefix(requestId)} [posthog] newsletter_subscribed capture failed`,
+            phErr,
+          );
+        }
+      }
+
+      if (result === "check-inbox") {
+        return withRequestId(redirect("/newsletter/check-inbox"), requestId);
+      }
+      if (result === "already-subscribed") {
+        return withRequestId(redirect("/newsletter/already"), requestId);
+      }
+      if (result === "resubscribed") {
+        return withRequestId(redirect("/newsletter/resubscribed"), requestId);
+      }
+      return withRequestId(redirect("/newsletter/check-inbox"), requestId);
+    } catch (error) {
+      console.error(requestLogPrefix(requestId), "error", error);
+      captureServerException({
+        error,
+        route: PH_ROUTE,
+        branch: "subscribeNewsletterEmail",
+        request,
+        requestId,
+        distinctId: posthogDistinctIdFromEmail(email),
+      });
+      return withRequestId(redirect("/newsletter/error"), requestId);
     }
-    if (result === "already-subscribed") {
-      return redirect("/newsletter/already");
-    }
-    if (result === "resubscribed") {
-      return redirect("/newsletter/resubscribed");
-    }
-    return redirect("/newsletter/check-inbox");
-  } catch (error) {
-    console.error("error", error);
-    await captureServerException({
-      error,
-      route: PH_ROUTE,
-      branch: "subscribeNewsletterEmail",
-      request,
-      distinctId: posthogDistinctIdFromEmail(email),
-    });
-    return redirect("/newsletter/error");
+  } finally {
+    waitUntil(
+      flushPostHogServer().catch((err) => {
+        console.warn("[posthog] flush failed", err);
+      }),
+    );
   }
 };

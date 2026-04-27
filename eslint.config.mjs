@@ -5,7 +5,14 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["dist", ".astro", ".vercel", "node_modules", ".claude/skills/**"],
+    ignores: [
+      "dist",
+      ".astro",
+      ".vercel",
+      "node_modules",
+      ".claude/skills/**",
+      "obsidian-docs/.obsidian/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

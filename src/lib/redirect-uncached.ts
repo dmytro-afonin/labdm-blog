@@ -1,3 +1,5 @@
+import { REQUEST_ID_HEADER } from "./request-id";
+
 /**
  * Redirect with cache-busting headers so browsers and CDNs do not reuse an old
  * redirect response (important for one-shot verification links).
@@ -5,6 +7,7 @@
 export function redirectUncached(
   pathOrUrl: string,
   request: Request,
+  requestId?: string,
 ): Response {
   const baseUrl = request.url;
 
@@ -19,12 +22,15 @@ export function redirectUncached(
     target = new URL(pathOrUrl, baseUrl).toString();
   }
 
+  const headers: Record<string, string> = {
+    Location: target,
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    Pragma: "no-cache",
+  };
+  if (requestId) headers[REQUEST_ID_HEADER] = requestId;
+
   return new Response(null, {
     status: 302,
-    headers: {
-      Location: target,
-      "Cache-Control": "no-store, no-cache, must-revalidate",
-      Pragma: "no-cache",
-    },
+    headers,
   });
 }

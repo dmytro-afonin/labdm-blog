@@ -1,0 +1,29 @@
+/* OS-driven theme. Nine semantic tokens per theme, no aliases. */
+
+html {
+  color-scheme: light;
+  --bg: #ebe7dc;
+  --text: #131813;
+  --muted: #5a6058;
+  --meta: #656c64;
+  --accent: #b8944a;
+  --accent-soft: #7a5f28;
+  --rule: rgb(0 0 0 / 10%);
+  --surface: rgb(255 255 255 / 55%);
+  --code-bg: rgb(244 241 234 / 96%);
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+    --bg: #353a34;
+    --text: #ebe8e2;
+    --muted: #b8b5ae;
+    --meta: #9a968e;
+    --accent: #c9a86a;
+    --accent-soft: #e8d8b8;
+    --rule: rgb(255 255 255 / 8%);
+    --surface: rgb(0 0 0 / 16%);
+    --code-bg: rgb(22 24 22 / 92%);
+  }
+}
