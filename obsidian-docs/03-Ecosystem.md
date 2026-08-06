@@ -49,7 +49,7 @@ flowchart LR
 ## Neon (Postgres)
 
 - **Connection** — `POSTGRES_URL` (see `src/lib/neon.ts`, server env validation).
-- **Migrations** — `db/migrations/*.sql` (subscribers table, lifecycle, double opt-in fields as applicable).
+- **Migrations** — `db/migrations/*.sql` applied by `bun run db:migrate` (CI before Preview/Production deploy).
 - **Role** — subscribers as **source of truth**; sync state and Resend contact id stored on rows; `subscriber_sync_events` for audit.
 
 ## Resend

@@ -19,6 +19,8 @@
     "lint:styles": "stylelint \"src/**/*.{astro,css}\" --allow-empty-input",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "db:migrate": "bun run scripts/db-migrate.ts",
+    "db:migrate:dry-run": "bun run scripts/db-migrate.ts -- --dry-run",
     "newsletter:sync": "bun run scripts/newsletter-sync.ts",
     "newsletter:sync:report": "bun run scripts/newsletter-sync-report.ts",
     "test": "bun run typecheck",

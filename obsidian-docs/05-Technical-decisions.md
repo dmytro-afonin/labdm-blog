@@ -14,7 +14,7 @@
 
 **Decision:** **Neon serverless Postgres** is the system of record for `subscribers` and sync metadata; Astro **Route handlers** + `@neondatabase/serverless` perform writes/reads.
 
-**Consequence:** No real-time DB subscriptions from the server product; for a newsletter this is acceptable. Migrations are manual SQL in `db/migrations/`.
+**Consequence:** No real-time DB subscriptions from the server product; for a newsletter this is acceptable. Schema changes are ordered SQL in `db/migrations/`, applied by `bun run db:migrate` (tracked in `schema_migrations`) and run in CI before Preview/Production Vercel deploys.
 
 ## Excerpt RSS as default
 
