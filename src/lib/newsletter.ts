@@ -9,8 +9,11 @@ import {
 import { getNeonSql, isDatabaseConfigured } from "./neon";
 import { envResendFromEmail } from "./server-env";
 import {
+  addResendContactToSegment,
   createResendContact,
   getResendContact,
+  removeResendContactFromSegment,
+  requireResendSegmentId,
   sendResendEmail,
   updateResendContact,
   type ResendContactWebhookEvent,
@@ -961,6 +964,9 @@ async function syncSubscriberToResend(
     );
   }
 
+  const segmentId = requireResendSegmentId();
+  const unsubscribed = subscriber.status === "unsubscribed";
+
   const contact =
     (subscriber.resendContactId
       ? await getResendContact({ id: subscriber.resendContactId })
@@ -969,15 +975,28 @@ async function syncSubscriberToResend(
   if (!contact) {
     const created = await createResendContact({
       email: subscriber.email,
-      unsubscribed: subscriber.status === "unsubscribed",
+      unsubscribed,
+      segmentIds: unsubscribed ? [] : [segmentId],
     });
     return created.id;
   }
 
   const updated = await updateResendContact({
     id: contact.id,
-    unsubscribed: subscriber.status === "unsubscribed",
+    unsubscribed,
   });
+
+  if (unsubscribed) {
+    await removeResendContactFromSegment({
+      contactId: contact.id,
+      segmentId,
+    });
+  } else {
+    await addResendContactToSegment({
+      contactId: contact.id,
+      segmentId,
+    });
+  }
 
   return updated.id;
 }

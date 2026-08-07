@@ -127,7 +127,7 @@ flowchart TD
 `**syncSubscriberNow(subscriber)**` (in `src/lib/newsletter.ts`)
 
 - **Guard:** throws if `verified_at` is null (unverified must not sync).
-- Resolves or creates Resend contact: `getResendContact` by id or email; `createResendContact` or `updateResendContact` with `unsubscribed` flag matching `subscriber.status`.
+- Resolves or creates Resend contact: `getResendContact` by id or email; `createResendContact` or `updateResendContact` with `unsubscribed` flag matching `subscriber.status`. Requires `RESEND_SEGMENT_ID` (prod vs preview segment): new contacts get `segments: [id]`; existing contacts are added to (subscribed) or removed from (unsubscribed) that segment.
 - On success: `markSubscriberSyncSuccess` — `resend_contact_id`, `sync_status = synced`, etc.
 - On failure: `markSubscriberSyncFailure` + `subscriber_sync_events` row with `status: failed`.
 

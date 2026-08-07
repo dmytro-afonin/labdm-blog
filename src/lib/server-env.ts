@@ -24,3 +24,5 @@ export const envResendFromEmail = envVar("RESEND_FROM_EMAIL");
 export const envResendWebhookSecret = envVar("RESEND_WEBHOOK_SECRET");
 export const envResendApiKey = envVar("RESEND_API_KEY");
 export const envResendContactsApiKey = envVar("RESEND_CONTACTS_API_KEY");
+/** Resend segment for this deploy (e.g. blog-prod vs blog-preview). */
+export const envResendSegmentId = envVar("RESEND_SEGMENT_ID");

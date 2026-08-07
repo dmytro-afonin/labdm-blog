@@ -55,7 +55,7 @@ flowchart LR
 ## Resend
 
 - **Transactional** — confirmation and operational email (`RESEND_FROM_EMAIL`, `RESEND_API_KEY`).
-- **Contacts API** — `newsletter:sync` / `newsletter:sync:report` scripts; optional `RESEND_CONTACTS_API_KEY`.
+- **Contacts API** — `newsletter:sync` / `newsletter:sync:report` scripts; optional `RESEND_CONTACTS_API_KEY`. Sync assigns contacts to `RESEND_SEGMENT_ID` (product×env segment, e.g. blog-prod / blog-preview).
 - **Webhooks** — `POST /api/webhooks/resend/contacts` with **Svix** verification (`RESEND_WEBHOOK_SECRET`).
 
 ## PostHog

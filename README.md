@@ -45,6 +45,7 @@ Environment variables:
 - `RESEND_CONTACTS_API_KEY` — full-access Resend key for the Contacts API (`newsletter:sync`). If omitted, `RESEND_API_KEY` is used and must not be send-only
 - `RESEND_FROM_EMAIL` — verified sender address for newsletter confirmation emails
 - `RESEND_WEBHOOK_SECRET`
+- `RESEND_SEGMENT_ID` — Resend segment for this environment (`blog-prod` / `blog-preview`); contacts are added here on sync
 - `NEWSLETTER_TOKEN_SECRET`
 - `PUBLIC_POSTHOG_PROJECT_TOKEN` / `PUBLIC_POSTHOG_HOST` (optional) — server-side PostHog in API routes only; no browser SDK bundle on static pages.
 
