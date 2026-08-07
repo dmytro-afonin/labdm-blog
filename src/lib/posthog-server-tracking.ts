@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { getPostHogServer } from "./posthog-server";
+import { envPostHogProjectToken } from "./server-env";
 
 /** Used when no user email / token is available for identification. */
 export const POSTHOG_SERVER_DISTINCT_ID = "$server";
@@ -18,7 +19,7 @@ export function posthogDistinctIdFromEmail(email: string): string {
 }
 
 export function isPostHogServerEnabled(): boolean {
-  return Boolean(import.meta.env.PUBLIC_POSTHOG_PROJECT_TOKEN?.trim());
+  return Boolean(envPostHogProjectToken());
 }
 
 /**

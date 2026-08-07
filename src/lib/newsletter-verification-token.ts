@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { absoluteUrl } from "../config/site";
+import { absoluteRuntimeUrl } from "../config/site";
 import { envNewsletterTokenSecret } from "./server-env";
 
 const verificationTokenLifetimeMs = 24 * 60 * 60 * 1000;
@@ -110,10 +110,18 @@ export function verifyNewsletterVerificationToken(
   }
 }
 
-export function buildNewsletterVerificationUrl(input: {
-  subscriberId: string;
-  email: string;
-}): string {
+export function buildNewsletterVerificationUrl(
+  input: {
+    subscriberId: string;
+    email: string;
+  },
+  options?: { requestUrl?: string },
+): string {
   const token = createNewsletterVerificationToken(input);
-  return absoluteUrl(`/c?token=${encodeURIComponent(token)}`);
+  // Build via searchParams so `?` cannot be encoded into the pathname (%3F),
+  // which would 404 as `/c%3Ftoken=...` instead of `/c?token=...`.
+  // Preview deployments use VERCEL_URL so confirm hits this deploy, not prod.
+  const url = new URL("/c", absoluteRuntimeUrl("/", options));
+  url.searchParams.set("token", token);
+  return url.toString();
 }

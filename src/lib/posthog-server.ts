@@ -1,5 +1,7 @@
 import { PostHog } from "posthog-node";
 
+import { envPostHogHost, envPostHogProjectToken } from "./server-env";
+
 let posthogClient: PostHog | null = null;
 
 /**
@@ -7,15 +9,16 @@ let posthogClient: PostHog | null = null;
  * Uses a singleton pattern to avoid creating multiple clients.
  */
 export function getPostHogServer(): PostHog {
-  const apiKey = import.meta.env.PUBLIC_POSTHOG_PROJECT_TOKEN?.trim() ?? "";
+  const apiKey = envPostHogProjectToken() ?? "";
   if (!apiKey) {
     throw new Error(
       "getPostHogServer() requires PUBLIC_POSTHOG_PROJECT_TOKEN (call only when isPostHogServerEnabled() is true).",
     );
   }
   if (!posthogClient) {
+    // Project is on EU cloud — default must not be us.i.posthog.com.
     posthogClient = new PostHog(apiKey, {
-      host: import.meta.env.PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+      host: envPostHogHost() || "https://eu.i.posthog.com",
       flushAt: 1,
       flushInterval: 0,
     });

@@ -74,7 +74,7 @@ flowchart TD
 
 **Throws from `subscribeNewsletterEmail`:** caught → `302` → `/newsletter/error`, exception captured for PostHog.
 
-**Non-blocking side effects:** After a successful `subscribeNewsletterEmail`, the handler schedules `**waitUntil(runNewsletterSubscribeSideEffects(result, subscriber))`** so **verification email** (with DB reservation) and **Resend sync** when applicable do not delay the `302`. PostHog subscribe events are captured before redirect; `**waitUntil(flushPostHogServer())`** in a `finally` block flushes the server client.
+**Non-blocking side effects:** After a successful `subscribeNewsletterEmail`, the handler schedules `**waitUntil(runNewsletterSubscribeSideEffects(result, subscriber, { requestUrl }))`** so **verification email** (with DB reservation) and **Resend sync** when applicable do not delay the `302`. Confirm/manage links use `getRuntimeSiteOrigin()` (`src/config/site.ts`): on Vercel **preview** they point at `https://$VERCEL_URL`, not production `siteConfig.url`. Canonical/SEO URLs stay on production. PostHog subscribe events are captured before redirect; `**waitUntil(flushPostHogServer())`** in a `finally` block flushes the server client.
 
 **New row creation:** `createSubscriberPendingVerification` inserts `status = subscribed`, `verified_at` still null until confirm step; verification email is sent from `**runNewsletterSubscribeSideEffects`\*\* via `maybeSendNewsletterVerificationEmail` (subject to cooldown reservation).
 
@@ -84,8 +84,8 @@ flowchart TD
 
 **Two entry URLs (same token):**
 
-1. **Short link (email-friendly):** `GET /c?token=...` — `src/pages/c.ts`. If `token` missing → `redirectUncached` → `/newsletter/confirm-invalid`. Else `302` to `/api/newsletter/confirm?token=...` (URL-encoded).
-2. **Long link:** `GET /api/newsletter/confirm?token=...` — `src/pages/api/newsletter/confirm.ts`.
+1. **Short link (email-friendly):** `GET /c?token=...` — `src/pages/c.ts`. Runs the same confirm handler inline (no redirect to the long URL), so preview **Vercel Authentication** cannot drop `?token=` on a second hop.
+2. **Long link:** `GET /api/newsletter/confirm?token=...` — same handler via `src/lib/newsletter-confirm-http.ts`.
 
 `**GET /api/newsletter/confirm`\*\*
 
@@ -127,7 +127,7 @@ flowchart TD
 `**syncSubscriberNow(subscriber)**` (in `src/lib/newsletter.ts`)
 
 - **Guard:** throws if `verified_at` is null (unverified must not sync).
-- Resolves or creates Resend contact: `getResendContact` by id or email; `createResendContact` or `updateResendContact` with `unsubscribed` flag matching `subscriber.status`.
+- Resolves or creates Resend contact: `getResendContact` by id or email; `createResendContact` or `updateResendContact` with `unsubscribed` flag matching `subscriber.status`. Requires `RESEND_SEGMENT_ID` (prod vs preview segment): new contacts get `segments: [id]`; existing contacts are added to (subscribed) or removed from (unsubscribed) that segment.
 - On success: `markSubscriberSyncSuccess` — `resend_contact_id`, `sync_status = synced`, etc.
 - On failure: `markSubscriberSyncFailure` + `subscriber_sync_events` row with `status: failed`.
 

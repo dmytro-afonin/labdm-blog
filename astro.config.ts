@@ -8,7 +8,11 @@ export default defineConfig({
   /** Static prerender by default; opt out with `prerender: false` on server routes (e.g. `/api/subscribe`). */
   output: "static",
   adapter: vercel({
-    /** Edge middleware (e.g. `x-request-id` on responses). */
-    middlewareMode: "edge",
+    /**
+     * Classic middleware runs in the Node request path (not a separate Edge
+     * proxy). Edge mode forwards POST bodies via fetch and breaks when API
+     * routes return redirects ("one-time-use body" / missing duplex).
+     */
+    middlewareMode: "classic",
   }),
 });

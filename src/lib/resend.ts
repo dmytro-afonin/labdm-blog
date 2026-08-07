@@ -3,6 +3,7 @@ import { Webhook } from "svix";
 import {
   envResendApiKey,
   envResendContactsApiKey,
+  envResendSegmentId,
   envResendWebhookSecret,
 } from "./server-env";
 
@@ -82,6 +83,17 @@ function getResendContactsApiKey(): string {
   throw new Error(
     "RESEND_CONTACTS_API_KEY or RESEND_API_KEY must be configured for Resend Contacts API (newsletter sync). Send-only keys are not sufficient; use a full-access key or set RESEND_CONTACTS_API_KEY.",
   );
+}
+
+/** Segment id for this environment’s list (prod vs preview). Required for contact sync. */
+export function requireResendSegmentId(): string {
+  const value = envResendSegmentId();
+  if (!value) {
+    throw new Error(
+      "RESEND_SEGMENT_ID is not configured. Set the Resend segment for this environment (e.g. blog-prod / blog-preview).",
+    );
+  }
+  return value;
 }
 
 function extractErrorMessage(body: unknown, fallback: string): string {
@@ -217,20 +229,72 @@ export async function getResendContact(input: {
 export async function createResendContact(input: {
   email: string;
   unsubscribed: boolean;
+  /** Segment IDs to assign on create (`segments: [{ id }]`). */
+  segmentIds?: string[];
 }): Promise<ResendContactMutationResult> {
+  const body: {
+    email: string;
+    unsubscribed: boolean;
+    segments?: Array<{ id: string }>;
+  } = {
+    email: input.email,
+    unsubscribed: input.unsubscribed,
+  };
+  if (input.segmentIds && input.segmentIds.length > 0) {
+    // Resend expects objects, not bare strings ("expected object, received string").
+    body.segments = input.segmentIds.map((id) => ({ id }));
+  }
+
   const payload = await resendRequest<unknown>(
     "/contacts",
     getResendContactsApiKey(),
     {
       method: "POST",
-      body: JSON.stringify({
-        email: input.email,
-        unsubscribed: input.unsubscribed,
-      }),
+      body: JSON.stringify(body),
     },
   );
 
   return mapMutationResult(payload);
+}
+
+export async function addResendContactToSegment(input: {
+  contactId: string;
+  segmentId: string;
+}): Promise<void> {
+  try {
+    await resendRequest<unknown>(
+      `/contacts/${encodeURIComponent(input.contactId)}/segments/${encodeURIComponent(input.segmentId)}`,
+      getResendContactsApiKey(),
+      { method: "POST" },
+    );
+  } catch (error) {
+    // Already a member — treat as success for idempotent sync.
+    if (
+      isResendApiError(error) &&
+      (error.status === 409 || error.status === 422)
+    ) {
+      return;
+    }
+    throw error;
+  }
+}
+
+export async function removeResendContactFromSegment(input: {
+  contactId: string;
+  segmentId: string;
+}): Promise<void> {
+  try {
+    await resendRequest<unknown>(
+      `/contacts/${encodeURIComponent(input.contactId)}/segments/${encodeURIComponent(input.segmentId)}`,
+      getResendContactsApiKey(),
+      { method: "DELETE" },
+    );
+  } catch (error) {
+    if (isResendApiError(error) && error.status === 404) {
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function updateResendContact(input: {

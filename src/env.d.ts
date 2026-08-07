@@ -18,6 +18,8 @@ interface ImportMetaEnv {
   readonly RESEND_FROM_EMAIL?: string;
   /** Resend Svix secret used to verify contact webhook deliveries. */
   readonly RESEND_WEBHOOK_SECRET?: string;
+  /** Resend segment id for this environment (blog-prod / blog-preview). */
+  readonly RESEND_SEGMENT_ID?: string;
   /** HMAC secret for tokenized newsletter management links. */
   readonly NEWSLETTER_TOKEN_SECRET?: string;
   /** PostHog project token (public, safe for client-side). */
@@ -33,6 +35,7 @@ declare namespace NodeJS {
     RESEND_CONTACTS_API_KEY?: string;
     RESEND_FROM_EMAIL?: string;
     RESEND_WEBHOOK_SECRET?: string;
+    RESEND_SEGMENT_ID?: string;
     NEWSLETTER_TOKEN_SECRET?: string;
   }
 }

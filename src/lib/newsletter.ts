@@ -9,8 +9,11 @@ import {
 import { getNeonSql, isDatabaseConfigured } from "./neon";
 import { envResendFromEmail } from "./server-env";
 import {
+  addResendContactToSegment,
   createResendContact,
   getResendContact,
+  removeResendContactFromSegment,
+  requireResendSegmentId,
   sendResendEmail,
   updateResendContact,
   type ResendContactWebhookEvent,
@@ -49,9 +52,7 @@ export type NewsletterSubscriberStatus = "subscribed" | "unsubscribed";
 export type NewsletterSyncStatus = "pending" | "synced" | "failed";
 export type NewsletterManageAction = "unsubscribe" | "resubscribe";
 export type NewsletterSubscriptionResult =
-  | "check-inbox"
-  | "already-subscribed"
-  | "resubscribed";
+  "check-inbox" | "already-subscribed" | "resubscribed";
 export type NewsletterConfirmationResult =
   | { status: "invalid" }
   | { status: "expired" }
@@ -404,11 +405,15 @@ async function reserveVerificationEmailSendAttempt(
 
 async function sendNewsletterVerificationEmail(
   subscriber: Pick<NewsletterSubscriber, "id" | "email">,
+  options?: { requestUrl?: string },
 ): Promise<void> {
-  const verificationUrl = buildNewsletterVerificationUrl({
-    subscriberId: subscriber.id,
-    email: subscriber.email,
-  });
+  const verificationUrl = buildNewsletterVerificationUrl(
+    {
+      subscriberId: subscriber.id,
+      email: subscriber.email,
+    },
+    options,
+  );
   const emailContent = renderNewsletterVerificationEmail({
     email: subscriber.email,
     verificationUrl,
@@ -429,6 +434,7 @@ async function maybeSendNewsletterVerificationEmail(
     "id" | "email" | "verificationEmailSentAt"
   >,
   timings?: Timings,
+  options?: { requestUrl?: string },
 ): Promise<void> {
   if (!shouldSendVerificationEmail(subscriber)) {
     return;
@@ -445,7 +451,7 @@ async function maybeSendNewsletterVerificationEmail(
 
   await timed(
     "send.sendNewsletterVerificationEmail",
-    () => sendNewsletterVerificationEmail(subscriber),
+    () => sendNewsletterVerificationEmail(subscriber, options),
     timings,
   );
 }
@@ -620,9 +626,10 @@ export async function subscribeNewsletterEmail(
 export async function runNewsletterSubscribeSideEffects(
   result: NewsletterSubscriptionResult,
   subscriber: NewsletterSubscriber,
+  options?: { requestUrl?: string },
 ): Promise<void> {
   if (result === "check-inbox") {
-    await maybeSendNewsletterVerificationEmail(subscriber);
+    await maybeSendNewsletterVerificationEmail(subscriber, undefined, options);
     return;
   }
   if (result === "resubscribed") {
@@ -957,6 +964,9 @@ async function syncSubscriberToResend(
     );
   }
 
+  const segmentId = requireResendSegmentId();
+  const unsubscribed = subscriber.status === "unsubscribed";
+
   const contact =
     (subscriber.resendContactId
       ? await getResendContact({ id: subscriber.resendContactId })
@@ -965,15 +975,28 @@ async function syncSubscriberToResend(
   if (!contact) {
     const created = await createResendContact({
       email: subscriber.email,
-      unsubscribed: subscriber.status === "unsubscribed",
+      unsubscribed,
+      segmentIds: unsubscribed ? [] : [segmentId],
     });
     return created.id;
   }
 
   const updated = await updateResendContact({
     id: contact.id,
-    unsubscribed: subscriber.status === "unsubscribed",
+    unsubscribed,
   });
+
+  if (unsubscribed) {
+    await removeResendContactFromSegment({
+      contactId: contact.id,
+      segmentId,
+    });
+  } else {
+    await addResendContactToSegment({
+      contactId: contact.id,
+      segmentId,
+    });
+  }
 
   return updated.id;
 }
@@ -1226,9 +1249,13 @@ export async function getNewsletterSyncReport(
 
 export function buildSubscriberManageUrl(
   subscriber: Pick<NewsletterSubscriber, "id" | "email">,
+  options?: { requestUrl?: string },
 ): string {
-  return buildNewsletterManageUrl({
-    subscriberId: subscriber.id,
-    email: subscriber.email,
-  });
+  return buildNewsletterManageUrl(
+    {
+      subscriberId: subscriber.id,
+      email: subscriber.email,
+    },
+    options,
+  );
 }

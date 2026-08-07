@@ -44,18 +44,18 @@ flowchart LR
 
 ## Bun
 
-- **Package manager** — `bun@1.3.11` (see `package.json`). Scripts for dev, build, newsletter maintenance, smoke test.
+- **Package manager** — `bun@1.3.14` (see `package.json`). Scripts for dev, build, newsletter maintenance, smoke test.
 
 ## Neon (Postgres)
 
 - **Connection** — `POSTGRES_URL` (see `src/lib/neon.ts`, server env validation).
-- **Migrations** — `db/migrations/*.sql` (subscribers table, lifecycle, double opt-in fields as applicable).
+- **Migrations** — `db/migrations/*.sql` applied by `bun run db:migrate` (CI before Preview/Production deploy).
 - **Role** — subscribers as **source of truth**; sync state and Resend contact id stored on rows; `subscriber_sync_events` for audit.
 
 ## Resend
 
 - **Transactional** — confirmation and operational email (`RESEND_FROM_EMAIL`, `RESEND_API_KEY`).
-- **Contacts API** — `newsletter:sync` / `newsletter:sync:report` scripts; optional `RESEND_CONTACTS_API_KEY`.
+- **Contacts API** — `newsletter:sync` / `newsletter:sync:report` scripts; optional `RESEND_CONTACTS_API_KEY`. Sync assigns contacts to `RESEND_SEGMENT_ID` (product×env segment, e.g. blog-prod / blog-preview).
 - **Webhooks** — `POST /api/webhooks/resend/contacts` with **Svix** verification (`RESEND_WEBHOOK_SECRET`).
 
 ## PostHog

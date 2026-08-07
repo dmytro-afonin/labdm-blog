@@ -108,13 +108,25 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       const dbMs = totalTiming(timings);
 
       waitUntil(
-        runNewsletterSubscribeSideEffects(result, subscriber).catch((err) => {
-          console.error(
-            requestLogPrefix(requestId),
-            "[subscribe] background side effects failed",
-            err,
-          );
-        }),
+        runNewsletterSubscribeSideEffects(result, subscriber, {
+          requestUrl: request.url,
+        })
+          .catch((err) => {
+            console.error(
+              requestLogPrefix(requestId),
+              "[subscribe] background side effects failed",
+              err,
+            );
+            captureServerException({
+              error: err,
+              route: PH_ROUTE,
+              branch: "runNewsletterSubscribeSideEffects",
+              request,
+              requestId,
+              distinctId: posthogDistinctIdFromEmail(email),
+            });
+          })
+          .then(() => flushPostHogServer()),
       );
       if (import.meta.env.DEV) {
         console.log(
