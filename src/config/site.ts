@@ -40,8 +40,19 @@ export function getPageTitle(pageTitle?: string) {
   return pageTitle ? `${pageTitle} | ${siteConfig.name}` : siteConfig.title;
 }
 
+/**
+ * Resolve a site-absolute URL. `path` may include query/hash (`/c?token=…`).
+ * Do not assign query strings through `URL.pathname` — that encodes `?` as `%3F`.
+ */
 export function absoluteUrl(path = "/") {
-  return new URL(path, siteConfig.url).toString();
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+  const base = siteConfig.url.endsWith("/")
+    ? siteConfig.url
+    : `${siteConfig.url}/`;
+  const normalized = path.startsWith("/") ? path.slice(1) : path;
+  return new URL(normalized, base).toString();
 }
 
 export function getSocialLinkItems(): Array<{

@@ -115,5 +115,9 @@ export function buildNewsletterVerificationUrl(input: {
   email: string;
 }): string {
   const token = createNewsletterVerificationToken(input);
-  return absoluteUrl(`/c?token=${encodeURIComponent(token)}`);
+  // Build via searchParams so `?` cannot be encoded into the pathname (%3F),
+  // which would 404 as `/c%3Ftoken=...` instead of `/c?token=...`.
+  const url = new URL("/c", absoluteUrl("/"));
+  url.searchParams.set("token", token);
+  return url.toString();
 }

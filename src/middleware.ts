@@ -11,6 +11,22 @@ import { getRequestId, withRequestId } from "./lib/request-id";
  * `Astro.request.headers` is unavailable during static generation.
  */
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Recover confirmation links where `?` was encoded into the path
+  // (`/c%3Ftoken=…` → `/c?token=…`). Must run before the prerendered early
+  // return — a bad path would otherwise hit static 404 and skip recovery.
+  const malformedConfirm = /^\/c%3Ftoken=(.+)$/i.exec(context.url.pathname);
+  if (malformedConfirm?.[1]) {
+    let token = malformedConfirm[1];
+    try {
+      token = decodeURIComponent(token);
+    } catch {
+      // keep raw token
+    }
+    const fixed = new URL("/c", context.url.origin);
+    fixed.searchParams.set("token", token);
+    return context.redirect(fixed.pathname + fixed.search, 302);
+  }
+
   if (context.isPrerendered) {
     return next();
   }
