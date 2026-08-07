@@ -9,9 +9,10 @@
  *
  * After fnm is available, runs `fnm install` in the repo root when `.node-version` exists.
  *
- * Already provided by this repo (no global install):
- * - Vercel CLI → `bunx vercel` / `node_modules/.bin/vercel`
- * - Astro, ESLint, Prettier, Stylelint → `bunx …` / local bin
+ * Already provided without a global install:
+ * - Vercel CLI → `bunx --bun vercel@58.8.0` (not a package.json dependency;
+ *   Vercel’s remote builder ignores a local `vercel` package and warns if present)
+ * - Astro, Oxlint, Prettier, Stylelint → `bunx …` / local bin from package.json
  *
  * Node version for fnm / nvm / asdf: see `.node-version` in the repo root.
  * Bun must be installed separately (see https://bun.sh ).
@@ -202,7 +203,7 @@ if (skipOptionalClis) {
   log("Skipping optional global CLIs (CI or SKIP_OPTIONAL_CLIS=1).");
 } else {
   log(
-    "Project CLIs: use `bunx vercel`, `bunx astro`, `bunx oxlint`, etc. (from devDependencies).",
+    "Project CLIs: use `bunx --bun vercel@58.8.0`, `bunx astro`, `bunx oxlint`, etc.",
   );
 
   if (process.env.SKIP_CODERABBIT_CLI !== "1") {

@@ -5,7 +5,7 @@ A Bun-first Astro blog with GitHub-based delivery and Vercel deployment automati
 ## Stack
 
 - Astro 7 (Vite 8) for the site
-- Bun for installs and scripts
+- Bun for installs and scripts (`bunfig.toml`: **isolated** linker, no dependency hoisting, 1-day `minimumReleaseAge`, Socket install scanner, `exact` versions on add)
 - TypeScript 6 + `astro check` (TS 7 blocked until `@astrojs/check` supports it)
 - Oxlint + Prettier + Stylelint for quality gates
 - GitHub Actions for validation and Vercel deploy orchestration
@@ -25,7 +25,7 @@ bun run dev
 ```
 
 - **`bun run dev`** — Astro dev server (default). API routes work here.
-- **`bun run dev:vercel`** — `vercel dev` with Vercel routing and env parity. The `dev` script must stay **`astro dev`** so `vercel dev` does not recurse; `vercel.json` sets `devCommand` to `bun run dev`.
+- **`bun run dev:vercel`** — `bunx vercel@58.8.0 dev` with Vercel routing and env parity. The CLI is **not** a package.json dependency (Vercel’s remote builder ignores it and warns if present). The `dev` script must stay **`astro dev`** so `vercel dev` does not recurse; `vercel.json` sets `devCommand` to `bun run dev`.
 
 Useful scripts:
 

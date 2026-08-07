@@ -8,11 +8,11 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "dev:vercel": "vercel dev",
+    "dev:vercel": "bunx --bun vercel@58.8.0 dev",
     "start": "astro dev",
     "build": "rm -rf dist/server/.prerender && astro build",
     "preview": "serve -l 4321 dist/client",
-    "preview:vercel": "vercel dev",
+    "preview:vercel": "bunx --bun vercel@58.8.0 dev",
     "typecheck": "astro check",
     "lint": "bun run lint:code && bun run lint:styles",
     "lint:code": "oxlint .",
@@ -26,6 +26,7 @@
     "test": "bun run typecheck",
     "verify": "bun run build && bun run test",
     "verify:push": "bun run format:check && bun run lint && bun run typecheck && bun run build && bun run smoke",
+    "deps:scan": "bun pm scan",
     "setup:git-hooks": "git config core.hooksPath .githooks",
     "postinstall": "node scripts/postinstall-clis.mjs",
     "smoke": "node scripts/smoke-preview.mjs",
@@ -33,8 +34,10 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@socketsecurity/bun-security-scanner": "1.1.2",
     "oxlint": "^1.77.0",
     "png-to-ico": "^3.0.2",
+    "postcss-html": "^2.0.0",
     "prettier": "^3.9.6",
     "prettier-plugin-astro": "^0.14.1",
     "serve": "^14.2.6",
@@ -42,8 +45,7 @@
     "stylelint": "^17.14.1",
     "stylelint-config-html": "^1.1.0",
     "stylelint-config-standard": "^40.0.0",
-    "typescript": "~6.0.3",
-    "vercel": "^58.8.0"
+    "typescript": "~6.0.3"
   },
   "dependencies": {
     "@astrojs/vercel": "11.0.5",
@@ -51,8 +53,18 @@
     "@vercel/functions": "^3.9.0",
     "astro": "7.2.0",
     "posthog-node": "^5.48.1",
-    "svix": "^1.99.1"
+    "svix": "^1.99.1",
+    "zod": "4.3.6"
   },
+  "overrides": {
+    "zod": "4.3.6",
+    "undici": "6.28.0",
+    "brace-expansion": "5.0.9"
+  },
+  "trustedDependencies": [
+    "esbuild",
+    "sharp"
+  ],
   "smoke": {
     "expectedSnippets": [
       "<title>Dmytro Afonin — labdm blog</title>",
