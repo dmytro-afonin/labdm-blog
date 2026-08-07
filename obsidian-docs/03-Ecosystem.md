@@ -45,6 +45,7 @@ flowchart LR
 ## Bun
 
 - **Package manager** — `bun@1.3.14` (see `package.json`). Scripts for dev, build, newsletter maintenance, smoke test.
+- **Install layout** — `bunfig.toml` sets `install.linker = "isolated"` and disables the shared store fallback (`hoist = false`, empty `hoistPattern`) so dependency resolution is pnpm-like: packages only see what they declare.
 
 ## Neon (Postgres)
 

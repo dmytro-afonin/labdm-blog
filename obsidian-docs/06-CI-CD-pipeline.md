@@ -145,7 +145,7 @@ No checkout; no install. This job never fails the workflow for missing secrets; 
 - `devCommand` — `bun run dev` (Astro dev server); used when you run `**vercel dev` locally so the CLI does not recurse into another `vercel dev` (the `dev` script must stay framework-only). Local/CI invoke the CLI with `bunx --bun vercel@58.8.0` — it is **not** listed in `package.json` (Vercel’s remote builder ignores a project `vercel` dependency and prints a warning).
 - `regions` — e.g. `["iad1"]` (Washington, D.C.) to align serverless routes with Neon in **AWS `us-east-1`** and cut database RTT.
 
-**Zod consistency:** `package.json` pins `zod@4.3.6` as a direct dependency and `overrides.zod` so Astro and `@vercel/functions` resolve one version on local, CI, and Vercel remote builds (avoids cache/hoist drift between Zod 4.1.x and 4.3.x).
+**Zod consistency:** `package.json` pins `zod@4.3.6` as a direct dependency and `overrides.zod` so Astro and `@vercel/functions` resolve one version. Installs use Bun’s **isolated** linker (`bunfig.toml`: `linker = "isolated"`, `hoist = false`) so packages cannot pick up undeclared / wrongly-hoisted copies the way a flat `node_modules` can.
 
 ---
 

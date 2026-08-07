@@ -5,7 +5,7 @@ A Bun-first Astro blog with GitHub-based delivery and Vercel deployment automati
 ## Stack
 
 - Astro 7 (Vite 8) for the site
-- Bun for installs and scripts
+- Bun for installs and scripts (`bunfig.toml`: **isolated** linker, no dependency hoisting — same idea as pnpm)
 - TypeScript 6 + `astro check` (TS 7 blocked until `@astrojs/check` supports it)
 - Oxlint + Prettier + Stylelint for quality gates
 - GitHub Actions for validation and Vercel deploy orchestration
