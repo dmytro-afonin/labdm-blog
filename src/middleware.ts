@@ -3,9 +3,9 @@ import { defineMiddleware } from "astro:middleware";
 import { getRequestId, withRequestId } from "./lib/request-id";
 
 /**
- * Runs on Vercel for requests when `adapter: vercel({ middlewareMode: "edge" })`
- * is enabled. Adds `x-request-id` for log / support correlation (matches
- * Vercel’s id when present).
+ * Adds `x-request-id` for log / support correlation (matches Vercel’s id when
+ * present). Uses classic middleware (see `astro.config.ts`) so POST API routes
+ * that redirect are not proxied through Edge fetch.
  *
  * Skips `request.headers` on prerendered routes so Astro does not warn that
  * `Astro.request.headers` is unavailable during static generation.
