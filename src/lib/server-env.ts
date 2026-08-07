@@ -26,3 +26,5 @@ export const envResendApiKey = envVar("RESEND_API_KEY");
 export const envResendContactsApiKey = envVar("RESEND_CONTACTS_API_KEY");
 /** Resend segment for this deploy (e.g. blog-prod vs blog-preview). */
 export const envResendSegmentId = envVar("RESEND_SEGMENT_ID");
+export const envPostHogProjectToken = envVar("PUBLIC_POSTHOG_PROJECT_TOKEN");
+export const envPostHogHost = envVar("PUBLIC_POSTHOG_HOST");

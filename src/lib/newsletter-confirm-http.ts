@@ -150,15 +150,25 @@ export async function handleNewsletterConfirmGet(
 
       if (subscriberForBackgroundSync) {
         waitUntil(
-          runNewsletterConfirmSideEffects(subscriberForBackgroundSync).catch(
-            (err) => {
+          runNewsletterConfirmSideEffects(subscriberForBackgroundSync)
+            .catch((err) => {
               console.error(
                 requestLogPrefix(requestId),
                 "[confirm] background Resend sync failed",
                 err,
               );
-            },
-          ),
+              captureServerException({
+                error: err,
+                route,
+                branch: "runNewsletterConfirmSideEffects",
+                request,
+                requestId,
+                distinctId: posthogDistinctIdFromEmail(
+                  subscriberForBackgroundSync.email,
+                ),
+              });
+            })
+            .then(() => flushPostHogServer()),
         );
       }
 
