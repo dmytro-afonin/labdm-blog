@@ -8,11 +8,11 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "dev:vercel": "vercel dev",
+    "dev:vercel": "bunx --bun vercel@58.8.0 dev",
     "start": "astro dev",
     "build": "rm -rf dist/server/.prerender && astro build",
     "preview": "serve -l 4321 dist/client",
-    "preview:vercel": "vercel dev",
+    "preview:vercel": "bunx --bun vercel@58.8.0 dev",
     "typecheck": "astro check",
     "lint": "bun run lint:code && bun run lint:styles",
     "lint:code": "oxlint .",
@@ -42,8 +42,7 @@
     "stylelint": "^17.14.1",
     "stylelint-config-html": "^1.1.0",
     "stylelint-config-standard": "^40.0.0",
-    "typescript": "~6.0.3",
-    "vercel": "^58.8.0"
+    "typescript": "~6.0.3"
   },
   "dependencies": {
     "@astrojs/vercel": "11.0.5",
@@ -51,7 +50,11 @@
     "@vercel/functions": "^3.9.0",
     "astro": "7.2.0",
     "posthog-node": "^5.48.1",
-    "svix": "^1.99.1"
+    "svix": "^1.99.1",
+    "zod": "4.3.6"
+  },
+  "overrides": {
+    "zod": "4.3.6"
   },
   "smoke": {
     "expectedSnippets": [

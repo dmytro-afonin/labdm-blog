@@ -25,7 +25,7 @@ bun run dev
 ```
 
 - **`bun run dev`** — Astro dev server (default). API routes work here.
-- **`bun run dev:vercel`** — `vercel dev` with Vercel routing and env parity. The `dev` script must stay **`astro dev`** so `vercel dev` does not recurse; `vercel.json` sets `devCommand` to `bun run dev`.
+- **`bun run dev:vercel`** — `bunx vercel@58.8.0 dev` with Vercel routing and env parity. The CLI is **not** a package.json dependency (Vercel’s remote builder ignores it and warns if present). The `dev` script must stay **`astro dev`** so `vercel dev` does not recurse; `vercel.json` sets `devCommand` to `bun run dev`.
 
 Useful scripts:
 
