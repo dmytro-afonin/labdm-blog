@@ -1,4 +1,6 @@
 # https://bun.com/docs/pm/isolated-installs
+# https://bun.com/docs/runtime/bunfig
+#
 # Isolated linker = pnpm-style layout (packages only get their declared deps).
 # hoist = false + empty hoistPattern: skip .bun/node_modules fallback so
 # undeclared imports cannot resolve through a shared store (Bun 1.3.x).
@@ -6,3 +8,13 @@
 linker = "isolated"
 hoist = false
 hoistPattern = []
+exact = true
+# globalStore = true breaks tools that dynamically resolve sibling deps from the
+# package install path (e.g. Stylelint → postcss-html) under isolated+no-hoist.
+# Supply-chain cool-down: new resolves must be ≥1 day old (existing bun.lock pins unchanged).
+minimumReleaseAge = 86400
+
+[install.security]
+# Socket free mode (optional SOCKET_API_KEY for org policy). Malware / supply-chain gate at install.
+# OSV CVE scanners are too noisy on Astro’s transitive tree and abort CI installs.
+scanner = "@socketsecurity/bun-security-scanner"

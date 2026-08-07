@@ -46,6 +46,7 @@ flowchart LR
 
 - **Package manager** — `bun@1.3.14` (see `package.json`). Scripts for dev, build, newsletter maintenance, smoke test.
 - **Install layout** — `bunfig.toml` sets `install.linker = "isolated"` and disables the shared store fallback (`hoist = false`, empty `hoistPattern`) so dependency resolution is pnpm-like: packages only see what they declare.
+- **Install policy** — `minimumReleaseAge = 86400` (1 day), `exact = true`, Socket security scanner at install (`@socketsecurity/bun-security-scanner`), and explicit `trustedDependencies` (`sharp`, `esbuild`) for lifecycle scripts. CI runs `bun pm scan` after install. (`globalStore` left off: it breaks Stylelint resolving `postcss-html` under isolated installs.)
 
 ## Neon (Postgres)
 

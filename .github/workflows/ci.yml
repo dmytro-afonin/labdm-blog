@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Scan dependencies for known vulnerabilities
+        run: bun pm scan
+
       - name: Check formatting
         run: bun run format:check
 
