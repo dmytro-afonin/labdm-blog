@@ -202,7 +202,7 @@ if (skipOptionalClis) {
   log("Skipping optional global CLIs (CI or SKIP_OPTIONAL_CLIS=1).");
 } else {
   log(
-    "Project CLIs: use `bunx vercel`, `bunx astro`, `bunx eslint`, etc. (from devDependencies).",
+    "Project CLIs: use `bunx vercel`, `bunx astro`, `bunx oxlint`, etc. (from devDependencies).",
   );
 
   if (process.env.SKIP_CODERABBIT_CLI !== "1") {

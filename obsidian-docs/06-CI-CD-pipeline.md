@@ -50,7 +50,7 @@ Preview and production **never** run on the same event: preview is PR-only, prod
 | 4    | Cache       | `actions/cache@v5` on `~/.bun/install/cache`, key `bun.lock`                                                                                                                             |
 | 5    | Install     | `bun install --frozen-lockfile`                                                                                                                                                          |
 | 6    | Format      | `bun run format:check` → Prettier check                                                                                                                                                  |
-| 7    | Lint code   | `bun run lint:code` → ESLint                                                                                                                                                             |
+| 7    | Lint code   | `bun run lint:code` → Oxlint                                                                                                                                                             |
 | 8    | Lint styles | `bun run lint:styles` → Stylelint on `src/**/*.{astro,css}`                                                                                                                              |
 | 9    | Types       | `bun run typecheck` → `astro check`                                                                                                                                                      |
 | 10   | Build       | `bun run build` → Astro production build                                                                                                                                                 |

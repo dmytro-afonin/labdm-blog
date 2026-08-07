@@ -4,8 +4,10 @@ A Bun-first Astro blog with GitHub-based delivery and Vercel deployment automati
 
 ## Stack
 
-- Astro for the site
+- Astro 7 (Vite 8) for the site
 - Bun for installs and scripts
+- TypeScript 6 + `astro check` (TS 7 blocked until `@astrojs/check` supports it)
+- Oxlint + Prettier + Stylelint for quality gates
 - GitHub Actions for validation and Vercel deploy orchestration
 - Vercel for preview and production hosting
 
