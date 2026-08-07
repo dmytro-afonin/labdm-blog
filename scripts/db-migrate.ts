@@ -107,11 +107,19 @@ function checksum(contents: string): string {
   return createHash("sha256").update(contents).digest("hex");
 }
 
+function migrationSequence(name: string): number {
+  const match = /^(\d+)_/u.exec(name);
+  return match ? Number.parseInt(match[1]!, 10) : Number.POSITIVE_INFINITY;
+}
+
 async function listMigrationFiles(): Promise<string[]> {
   const entries = await readdir(migrationsDir);
   return entries
     .filter((name) => /^\d+_.+\.sql$/u.test(name))
-    .sort((a, b) => a.localeCompare(b, "en"));
+    .sort((a, b) => {
+      const seq = migrationSequence(a) - migrationSequence(b);
+      return seq !== 0 ? seq : a.localeCompare(b, "en");
+    });
 }
 
 async function ensureMigrationsTable(client: PoolClient): Promise<void> {
@@ -122,6 +130,13 @@ async function ensureMigrationsTable(client: PoolClient): Promise<void> {
       applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+}
+
+async function migrationsTableExists(client: PoolClient): Promise<boolean> {
+  const result = await client.query<{ exists: boolean }>(
+    `SELECT to_regclass('public.schema_migrations') IS NOT NULL AS exists`,
+  );
+  return Boolean(result.rows[0]?.exists);
 }
 
 async function appliedMigrations(
@@ -139,13 +154,22 @@ async function applyMigration(
   sql: string,
   fileChecksum: string,
 ): Promise<void> {
-  // Migration files may include their own BEGIN/COMMIT (e.g. 003).
-  // Run the file as-is, then record success outside that transaction.
-  await client.query(sql);
-  await client.query(
-    `INSERT INTO schema_migrations (id, checksum) VALUES ($1, $2)`,
-    [id, fileChecksum],
-  );
+  await client.query("BEGIN");
+  try {
+    await client.query(sql);
+    await client.query(
+      `INSERT INTO schema_migrations (id, checksum) VALUES ($1, $2)`,
+      [id, fileChecksum],
+    );
+    await client.query("COMMIT");
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // ignore rollback failures; original error is more useful
+    }
+    throw error;
+  }
 }
 
 async function main(): Promise<void> {
@@ -163,8 +187,16 @@ async function main(): Promise<void> {
 
   try {
     await client.query("SELECT pg_advisory_lock($1)", [872451003]);
-    await ensureMigrationsTable(client);
-    const applied = await appliedMigrations(client);
+
+    let applied: Map<string, string>;
+    if (dryRun) {
+      applied = (await migrationsTableExists(client))
+        ? await appliedMigrations(client)
+        : new Map();
+    } else {
+      await ensureMigrationsTable(client);
+      applied = await appliedMigrations(client);
+    }
 
     let pending = 0;
     for (const file of files) {

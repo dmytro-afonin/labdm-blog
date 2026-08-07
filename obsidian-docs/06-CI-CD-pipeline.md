@@ -46,7 +46,7 @@ Preview and production **never** run on the same event: preview is PR-only, prod
 | ---- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | Checkout    | `actions/checkout@v6`                                                                                                                                                                    |
 | 2    | Node 24     | `actions/setup-node@v6` with `node-version: 24`                                                                                                                                          |
-| 3    | Bun 1.3.11  | `oven-sh/setup-bun@v2.2.0` with `bun-version: "1.3.11"`                                                                                                                                  |
+| 3    | Bun 1.3.14  | `oven-sh/setup-bun@v2.2.0` with `bun-version: "1.3.14"`                                                                                                                                  |
 | 4    | Cache       | `actions/cache@v5` on `~/.bun/install/cache`, key `bun.lock`                                                                                                                             |
 | 5    | Install     | `bun install --frozen-lockfile`                                                                                                                                                          |
 | 6    | Format      | `bun run format:check` → Prettier check                                                                                                                                                  |

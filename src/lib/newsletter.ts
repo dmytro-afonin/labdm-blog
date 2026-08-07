@@ -49,9 +49,7 @@ export type NewsletterSubscriberStatus = "subscribed" | "unsubscribed";
 export type NewsletterSyncStatus = "pending" | "synced" | "failed";
 export type NewsletterManageAction = "unsubscribe" | "resubscribe";
 export type NewsletterSubscriptionResult =
-  | "check-inbox"
-  | "already-subscribed"
-  | "resubscribed";
+  "check-inbox" | "already-subscribed" | "resubscribed";
 export type NewsletterConfirmationResult =
   | { status: "invalid" }
   | { status: "expired" }

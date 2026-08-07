@@ -44,7 +44,7 @@ flowchart LR
 
 ## Bun
 
-- **Package manager** — `bun@1.3.11` (see `package.json`). Scripts for dev, build, newsletter maintenance, smoke test.
+- **Package manager** — `bun@1.3.14` (see `package.json`). Scripts for dev, build, newsletter maintenance, smoke test.
 
 ## Neon (Postgres)
 
