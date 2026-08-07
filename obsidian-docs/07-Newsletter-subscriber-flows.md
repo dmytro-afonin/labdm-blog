@@ -26,7 +26,7 @@ This document matches **current** behavior in the repo (paths relative to projec
 **Request:** `Content-Type` must be `application/x-www-form-urlencoded` or `multipart/form-data`. Fields:
 
 - `email` — required string.
-- `company` — honeypot; if non-empty after trim, treated as bot → still redirected to a benign success page (no error to attacker).
+- `website_url_hp` — honeypot (obscure name so password managers do not autofill it); if non-empty after trim, treated as bot → still redirected to a benign success page (no error to attacker).
 
 **Preconditions**
 
@@ -41,7 +41,7 @@ This document matches **current** behavior in the repo (paths relative to projec
 flowchart TD
   Start([POST /api/subscribe]) --> DB{POSTGRES_URL?}
   DB -->|no| E1["302 /newsletter/error"]
-  DB -->|yes| H{honeypot company empty?}
+  DB -->|yes| H{honeypot website_url_hp empty?}
   H -->|no| CI1["302 /newsletter/check-inbox"]
   H -->|yes| Em{valid email?}
   Em -->|no| Inv["302 /newsletter/invalid"]
