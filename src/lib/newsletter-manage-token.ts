@@ -1,12 +1,17 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 
 import { absoluteRuntimeUrl } from "../config/site";
 import { envNewsletterTokenSecret } from "./server-env";
 
-export interface NewsletterManageTokenPayload {
-  subscriberId: string;
-  email: string;
-}
+const manageTokenPayloadSchema = z.object({
+  subscriberId: z.string().min(1),
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+});
+
+export type NewsletterManageTokenPayload = z.infer<
+  typeof manageTokenPayloadSchema
+>;
 
 function getTokenSecret(): string {
   const value = envNewsletterTokenSecret();
@@ -56,22 +61,10 @@ export function verifyNewsletterManageToken(
 
   try {
     const decoded = Buffer.from(encodedPayload, "base64url").toString("utf8");
-    const parsed = JSON.parse(decoded) as {
-      subscriberId?: unknown;
-      email?: unknown;
-    };
-
-    if (
-      typeof parsed.subscriberId !== "string" ||
-      typeof parsed.email !== "string"
-    ) {
-      return null;
-    }
-
-    return {
-      subscriberId: parsed.subscriberId,
-      email: parsed.email.toLowerCase(),
-    };
+    const parsed = manageTokenPayloadSchema.safeParse(
+      JSON.parse(decoded) as unknown,
+    );
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }

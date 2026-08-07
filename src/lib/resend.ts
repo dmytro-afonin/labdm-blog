@@ -1,4 +1,5 @@
 import { Webhook } from "svix";
+import { z } from "zod";
 
 import {
   envResendApiKey,
@@ -36,6 +37,32 @@ export interface ResendContactWebhookEvent {
   created_at?: string;
   data: ResendContactWebhookPayload;
 }
+
+const resendContactSchema = z.object({
+  id: z.string().min(1),
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  unsubscribed: z.boolean().optional(),
+  created_at: z.string().optional(),
+});
+
+const resendMutationResultSchema = z.object({
+  id: z.string().min(1),
+});
+
+const resendApiErrorBodySchema = z.object({
+  message: z.string().optional(),
+  error: z.string().optional(),
+});
+
+const resendContactWebhookSchema = z.object({
+  type: z.enum(["contact.created", "contact.updated", "contact.deleted"]),
+  created_at: z.string().optional(),
+  data: z.object({
+    id: z.string().optional(),
+    email: z.string().optional(),
+    unsubscribed: z.boolean().optional(),
+  }),
+});
 
 class ResendApiError extends Error {
   readonly status: number;
@@ -97,61 +124,42 @@ export function requireResendSegmentId(): string {
 }
 
 function extractErrorMessage(body: unknown, fallback: string): string {
-  if (!body || typeof body !== "object") return fallback;
+  const parsed = resendApiErrorBodySchema.safeParse(body);
+  if (!parsed.success) return fallback;
 
-  const maybeError = body as {
-    message?: unknown;
-    error?: unknown;
-    name?: unknown;
-  };
+  const message = parsed.data.message?.trim();
+  if (message) return message;
 
-  if (typeof maybeError.message === "string" && maybeError.message.trim()) {
-    return maybeError.message;
-  }
-
-  if (typeof maybeError.error === "string" && maybeError.error.trim()) {
-    return maybeError.error;
-  }
+  const error = parsed.data.error?.trim();
+  if (error) return error;
 
   return fallback;
 }
 
 function mapResendContact(value: unknown): ResendContact {
-  if (!value || typeof value !== "object") {
-    throw new Error("Invalid Resend contact payload.");
-  }
-
-  const candidate = value as {
-    id?: unknown;
-    email?: unknown;
-    unsubscribed?: unknown;
-    created_at?: unknown;
-  };
-
-  if (typeof candidate.id !== "string" || typeof candidate.email !== "string") {
-    throw new Error("Resend contact payload is missing id or email.");
+  const parsed = resendContactSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error(
+      parsed.error.issues[0]?.message ?? "Invalid Resend contact payload.",
+    );
   }
 
   return {
-    id: candidate.id,
-    email: candidate.email.toLowerCase(),
-    unsubscribed: candidate.unsubscribed === true,
-    createdAt:
-      typeof candidate.created_at === "string" ? candidate.created_at : null,
+    id: parsed.data.id,
+    email: parsed.data.email,
+    unsubscribed: parsed.data.unsubscribed === true,
+    createdAt: parsed.data.created_at ?? null,
   };
 }
 
 function mapMutationResult(value: unknown): ResendContactMutationResult {
-  if (!value || typeof value !== "object") {
-    throw new Error("Invalid Resend mutation payload.");
+  const parsed = resendMutationResultSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error(
+      parsed.error.issues[0]?.message ?? "Invalid Resend mutation payload.",
+    );
   }
-
-  const candidate = value as { id?: unknown };
-  if (typeof candidate.id !== "string") {
-    throw new Error("Resend mutation payload is missing id.");
-  }
-
-  return { id: candidate.id };
+  return { id: parsed.data.id };
 }
 
 async function resendRequest<T>(
@@ -366,46 +374,20 @@ export function verifyResendContactWebhook(
     "svix-signature": getRequiredHeader(headers, "svix-signature"),
   }) as unknown;
 
-  if (!verified || typeof verified !== "object") {
-    throw new Error("Invalid webhook payload.");
+  const parsed = resendContactWebhookSchema.safeParse(verified);
+  if (!parsed.success) {
+    throw new Error(
+      parsed.error.issues[0]?.message ?? "Invalid webhook payload.",
+    );
   }
-
-  const candidate = verified as {
-    type?: unknown;
-    created_at?: unknown;
-    data?: unknown;
-  };
-
-  if (
-    candidate.type !== "contact.created" &&
-    candidate.type !== "contact.updated" &&
-    candidate.type !== "contact.deleted"
-  ) {
-    throw new Error("Unsupported Resend contact webhook type.");
-  }
-
-  if (!candidate.data || typeof candidate.data !== "object") {
-    throw new Error("Webhook payload is missing contact data.");
-  }
-
-  const data = candidate.data as {
-    id?: unknown;
-    email?: unknown;
-    unsubscribed?: unknown;
-  };
 
   return {
-    type: candidate.type,
-    created_at:
-      typeof candidate.created_at === "string"
-        ? candidate.created_at
-        : undefined,
+    type: parsed.data.type,
+    created_at: parsed.data.created_at,
     data: {
-      id: typeof data.id === "string" ? data.id : undefined,
-      email:
-        typeof data.email === "string" ? data.email.toLowerCase() : undefined,
-      unsubscribed:
-        typeof data.unsubscribed === "boolean" ? data.unsubscribed : undefined,
+      id: parsed.data.data.id,
+      email: parsed.data.data.email?.toLowerCase(),
+      unsubscribed: parsed.data.data.unsubscribed,
     },
   };
 }

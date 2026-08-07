@@ -33,7 +33,7 @@ This document matches **current** behavior in the repo (paths relative to projec
 - `POSTGRES_URL` must be configured (`src/lib/neon.ts` — `isDatabaseConfigured()`). If not → `302` → `/newsletter/error`.
 - Invalid content type → `/newsletter/invalid`.
 - `formData` parse error → `/newsletter/invalid`.
-- Invalid or empty email (after `normalizeNewsletterEmail` + regex in `isValidNewsletterEmail`) → `/newsletter/invalid`.
+- Invalid or empty email (after Zod `newsletterEmailSchema` / `parseNewsletterEmail`) → `/newsletter/invalid`.
 
 **Core logic:** `subscribeNewsletterEmail(email)` in `src/lib/newsletter.ts` (returns `check-inbox` | `already-subscribed` | `resubscribed`).
 
