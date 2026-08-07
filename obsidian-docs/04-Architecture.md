@@ -2,9 +2,17 @@
 
 ## High level
 
-- **Astro 6** site with **content collections** for posts (`src/content.config.ts` → `src/content/posts/*.md`).
+- **Astro 7** site with **content collections** for posts (`src/content.config.ts` → `src/content/posts/*.md`). Vite **8** / Rolldown via Astro.
 - **Default: static prerender**; **serverless** only where needed (API routes, non-prerendered endpoints).
 - **@astrojs/vercel** — production server functions for `output: "static"` hybrid (static pages + API routes).
+
+## Toolchain
+
+- **TypeScript 6** — project `typescript` stays on 6.x because official `astro check` (`@astrojs/check`) does not support TypeScript 7’s native API yet. Revisit after Astro updates peers.
+- **Oxlint** — JS/TS lint (replaces ESLint). `.astro` frontmatter/script only.
+- **Prettier** + `prettier-plugin-astro` — formatting (Oxfmt not used yet: no Astro support).
+- **Stylelint** — CSS / styles in `.astro`.
+- **Not Vite+** — Astro owns `dev`/`build`; Vite+ would duplicate that entrypoint.
 
 ## Route map (main)
 
@@ -23,7 +31,7 @@
 
 ## Middleware
 
-- **`src/middleware.ts`** (Vercel **edge**, via `adapter: vercel({ middlewareMode: "edge" })`) adds **`x-request-id`** on responses for log / PostHog correlation. On **prerendered** routes it skips reading `request.headers` so static generation does not warn about `Astro.request.headers`.
+- **`src/middleware.ts`** (Vercel **classic** Node middleware via `adapter: vercel({ middlewareMode: "classic" })`) adds **`x-request-id`** on responses for log / PostHog correlation, and recovers mangled `/c%3Ftoken=…` confirm links. On **prerendered** routes it skips reading `request.headers` so static generation does not warn about `Astro.request.headers`. Edge middleware mode is avoided because it breaks POST + redirect on subscribe.
 
 ## Key directories
 

@@ -55,7 +55,7 @@ const PRETTIER_EXT = new Set([
   ".yaml",
 ]);
 
-const ESLINT_EXT = new Set([
+const OXLINT_EXT = new Set([
   ".js",
   ".mjs",
   ".cjs",
@@ -85,7 +85,7 @@ if (
   process.exit(1);
 }
 
-if (ESLINT_EXT.has(ext) && run("bunx", ["eslint", "--fix", resolved]) !== 0) {
+if (OXLINT_EXT.has(ext) && run("bunx", ["oxlint", "--fix", resolved]) !== 0) {
   process.exit(1);
 }
 

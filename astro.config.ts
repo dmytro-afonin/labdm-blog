@@ -7,6 +7,11 @@ export default defineConfig({
   site: siteConfig.url,
   /** Static prerender by default; opt out with `prerender: false` on server routes (e.g. `/api/subscribe`). */
   output: "static",
+  /**
+   * Keep Astro 6 HTML-aware whitespace (v7 default is `'jsx'`, which can
+   * collapse spaces between adjacent inline elements).
+   */
+  compressHTML: true,
   adapter: vercel({
     /**
      * Classic middleware runs in the Node request path (not a separate Edge
