@@ -108,7 +108,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       const dbMs = totalTiming(timings);
 
       waitUntil(
-        runNewsletterSubscribeSideEffects(result, subscriber).catch((err) => {
+        runNewsletterSubscribeSideEffects(result, subscriber, {
+          requestUrl: request.url,
+        }).catch((err) => {
           console.error(
             requestLogPrefix(requestId),
             "[subscribe] background side effects failed",

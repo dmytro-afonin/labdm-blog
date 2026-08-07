@@ -402,11 +402,15 @@ async function reserveVerificationEmailSendAttempt(
 
 async function sendNewsletterVerificationEmail(
   subscriber: Pick<NewsletterSubscriber, "id" | "email">,
+  options?: { requestUrl?: string },
 ): Promise<void> {
-  const verificationUrl = buildNewsletterVerificationUrl({
-    subscriberId: subscriber.id,
-    email: subscriber.email,
-  });
+  const verificationUrl = buildNewsletterVerificationUrl(
+    {
+      subscriberId: subscriber.id,
+      email: subscriber.email,
+    },
+    options,
+  );
   const emailContent = renderNewsletterVerificationEmail({
     email: subscriber.email,
     verificationUrl,
@@ -427,6 +431,7 @@ async function maybeSendNewsletterVerificationEmail(
     "id" | "email" | "verificationEmailSentAt"
   >,
   timings?: Timings,
+  options?: { requestUrl?: string },
 ): Promise<void> {
   if (!shouldSendVerificationEmail(subscriber)) {
     return;
@@ -443,7 +448,7 @@ async function maybeSendNewsletterVerificationEmail(
 
   await timed(
     "send.sendNewsletterVerificationEmail",
-    () => sendNewsletterVerificationEmail(subscriber),
+    () => sendNewsletterVerificationEmail(subscriber, options),
     timings,
   );
 }
@@ -618,9 +623,10 @@ export async function subscribeNewsletterEmail(
 export async function runNewsletterSubscribeSideEffects(
   result: NewsletterSubscriptionResult,
   subscriber: NewsletterSubscriber,
+  options?: { requestUrl?: string },
 ): Promise<void> {
   if (result === "check-inbox") {
-    await maybeSendNewsletterVerificationEmail(subscriber);
+    await maybeSendNewsletterVerificationEmail(subscriber, undefined, options);
     return;
   }
   if (result === "resubscribed") {
@@ -1224,9 +1230,13 @@ export async function getNewsletterSyncReport(
 
 export function buildSubscriberManageUrl(
   subscriber: Pick<NewsletterSubscriber, "id" | "email">,
+  options?: { requestUrl?: string },
 ): string {
-  return buildNewsletterManageUrl({
-    subscriberId: subscriber.id,
-    email: subscriber.email,
-  });
+  return buildNewsletterManageUrl(
+    {
+      subscriberId: subscriber.id,
+      email: subscriber.email,
+    },
+    options,
+  );
 }

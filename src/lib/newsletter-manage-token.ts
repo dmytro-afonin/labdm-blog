@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { absoluteUrl } from "../config/site";
+import { absoluteRuntimeUrl } from "../config/site";
 import { envNewsletterTokenSecret } from "./server-env";
 
 export interface NewsletterManageTokenPayload {
@@ -79,8 +79,10 @@ export function verifyNewsletterManageToken(
 
 export function buildNewsletterManageUrl(
   payload: NewsletterManageTokenPayload,
+  options?: { requestUrl?: string },
 ): string {
-  return absoluteUrl(
+  return absoluteRuntimeUrl(
     `/newsletter/manage/${createNewsletterManageToken(payload)}`,
+    options,
   );
 }

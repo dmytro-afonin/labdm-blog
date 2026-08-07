@@ -74,7 +74,7 @@ flowchart TD
 
 **Throws from `subscribeNewsletterEmail`:** caught → `302` → `/newsletter/error`, exception captured for PostHog.
 
-**Non-blocking side effects:** After a successful `subscribeNewsletterEmail`, the handler schedules `**waitUntil(runNewsletterSubscribeSideEffects(result, subscriber))`** so **verification email** (with DB reservation) and **Resend sync** when applicable do not delay the `302`. PostHog subscribe events are captured before redirect; `**waitUntil(flushPostHogServer())`** in a `finally` block flushes the server client.
+**Non-blocking side effects:** After a successful `subscribeNewsletterEmail`, the handler schedules `**waitUntil(runNewsletterSubscribeSideEffects(result, subscriber, { requestUrl }))`** so **verification email** (with DB reservation) and **Resend sync** when applicable do not delay the `302`. Confirm/manage links use `getRuntimeSiteOrigin()` (`src/config/site.ts`): on Vercel **preview** they point at `https://$VERCEL_URL`, not production `siteConfig.url`. Canonical/SEO URLs stay on production. PostHog subscribe events are captured before redirect; `**waitUntil(flushPostHogServer())`** in a `finally` block flushes the server client.
 
 **New row creation:** `createSubscriberPendingVerification` inserts `status = subscribed`, `verified_at` still null until confirm step; verification email is sent from `**runNewsletterSubscribeSideEffects`\*\* via `maybeSendNewsletterVerificationEmail` (subject to cooldown reservation).
 
