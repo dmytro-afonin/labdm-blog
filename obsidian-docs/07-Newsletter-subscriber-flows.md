@@ -84,8 +84,8 @@ flowchart TD
 
 **Two entry URLs (same token):**
 
-1. **Short link (email-friendly):** `GET /c?token=...` — `src/pages/c.ts`. If `token` missing → `redirectUncached` → `/newsletter/confirm-invalid`. Else `302` to `/api/newsletter/confirm?token=...` (URL-encoded).
-2. **Long link:** `GET /api/newsletter/confirm?token=...` — `src/pages/api/newsletter/confirm.ts`.
+1. **Short link (email-friendly):** `GET /c?token=...` — `src/pages/c.ts`. Runs the same confirm handler inline (no redirect to the long URL), so preview **Vercel Authentication** cannot drop `?token=` on a second hop.
+2. **Long link:** `GET /api/newsletter/confirm?token=...` — same handler via `src/lib/newsletter-confirm-http.ts`.
 
 `**GET /api/newsletter/confirm`\*\*
 

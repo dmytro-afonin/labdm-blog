@@ -229,19 +229,20 @@ export async function getResendContact(input: {
 export async function createResendContact(input: {
   email: string;
   unsubscribed: boolean;
-  /** Segment IDs to assign on create (OpenAPI: string[]). */
+  /** Segment IDs to assign on create (`segments: [{ id }]`). */
   segmentIds?: string[];
 }): Promise<ResendContactMutationResult> {
   const body: {
     email: string;
     unsubscribed: boolean;
-    segments?: string[];
+    segments?: Array<{ id: string }>;
   } = {
     email: input.email,
     unsubscribed: input.unsubscribed,
   };
   if (input.segmentIds && input.segmentIds.length > 0) {
-    body.segments = input.segmentIds;
+    // Resend expects objects, not bare strings ("expected object, received string").
+    body.segments = input.segmentIds.map((id) => ({ id }));
   }
 
   const payload = await resendRequest<unknown>(
