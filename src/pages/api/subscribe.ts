@@ -74,7 +74,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       return withRequestId(redirect("/newsletter/invalid"), requestId);
     }
 
-    const honeypot = formData.get("company");
+    // Obscure field name — "company"/"name" often get password-manager autofill.
+    const honeypot = formData.get("website_url_hp");
     if (typeof honeypot === "string" && honeypot.trim() !== "") {
       captureServerOutcome({
         route: PH_ROUTE,
