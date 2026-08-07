@@ -127,15 +127,6 @@ jobs:
       - name: Pull Vercel environment
         run: bunx vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
-      - name: Pull env for database migrations
-        run: bunx vercel env pull .env.local --environment=preview --yes --token="$VERCEL_TOKEN"
-
-      - name: Run database migrations
-        run: bun run db:migrate
-
-      - name: Build Vercel artifacts
-        run: bunx vercel build --token="$VERCEL_TOKEN"
-
       - name: Create preview deployment record
         id: github_preview_deployment
         uses: actions/github-script@v9
@@ -164,10 +155,11 @@ jobs:
           state: in_progress
           description: Preview deployment in progress
 
+      # Remote build so Sensitive env (e.g. Neon POSTGRES_URL) is available for db:migrate.
       - name: Deploy preview
         id: deploy
         run: |
-          deployment_url="$(bunx vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN")"
+          deployment_url="$(bunx vercel deploy --yes --token="$VERCEL_TOKEN")"
           if [[ ! "$deployment_url" =~ ^https:// ]]; then
             echo "::error::Expected a deployment URL from Vercel, got: $deployment_url"
             exit 1
@@ -301,15 +293,6 @@ jobs:
       - name: Pull Vercel environment
         run: bunx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
-      - name: Pull env for database migrations
-        run: bunx vercel env pull .env.local --environment=production --yes --token="$VERCEL_TOKEN"
-
-      - name: Run database migrations
-        run: bun run db:migrate
-
-      - name: Build Vercel artifacts
-        run: bunx vercel build --prod --token="$VERCEL_TOKEN"
-
       - name: Create production deployment record
         id: github_production_deployment
         uses: actions/github-script@v9
@@ -338,8 +321,9 @@ jobs:
           state: in_progress
           description: Production deployment in progress
 
+      # Remote build so Sensitive env (e.g. Neon POSTGRES_URL) is available for db:migrate.
       - name: Deploy production
-        run: bunx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        run: bunx vercel deploy --prod --yes --token="$VERCEL_TOKEN"
 
       - name: Report production deployment success to GitHub
         if: success() && steps.github_production_deployment.outputs.deployment_id != ''

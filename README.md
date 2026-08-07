@@ -48,7 +48,7 @@ Environment variables:
 - `NEWSLETTER_TOKEN_SECRET`
 - `PUBLIC_POSTHOG_PROJECT_TOKEN` / `PUBLIC_POSTHOG_HOST` (optional) — server-side PostHog in API routes only; no browser SDK bundle on static pages.
 
-**Database migrations:** SQL lives in `db/migrations/`. Apply with `bun run db:migrate` (uses `POSTGRES_URL` or `DATABASE_URL`; loads `.env.local` / `.vercel/.env.*.local` when needed). Preview and production deploys run the same command in CI after `vercel pull`. Use `bun run db:migrate:dry-run` to list pending files. Never edit an already-applied migration — add a new numbered file instead.
+**Database migrations:** SQL lives in `db/migrations/`. Apply with `bun run db:migrate` (uses `POSTGRES_URL` or `DATABASE_URL`). On Vercel, `buildCommand` runs migrations before the site build so **Sensitive** Neon URLs work (they are not readable via `vercel env pull`). For local migrate, paste the connection string from Neon into `.env.local`. Use `bun run db:migrate:dry-run` to list pending files. Never edit an already-applied migration — add a new numbered file instead.
 
 **Runtime:** `vercel.json` can set `regions` (e.g. `iad1`) near **Neon in `us-east-1`** to reduce DB latency. Edge middleware adds **`x-request-id`** on responses (aligned with Vercel’s id when present) for logs and PostHog.
 

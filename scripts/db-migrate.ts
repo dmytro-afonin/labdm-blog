@@ -97,7 +97,12 @@ function getDatabaseUrl(): string {
     process.env.POSTGRES_URL?.trim() || process.env.DATABASE_URL?.trim();
   if (!url) {
     throw new Error(
-      "POSTGRES_URL (or DATABASE_URL) is not configured. Pull Preview/Production env or set it in .env.local.",
+      "POSTGRES_URL (or DATABASE_URL) is not configured. Set it in .env.local (from Neon) or run migrations in the Vercel build where Sensitive env is injected.",
+    );
+  }
+  if (url === "[SENSITIVE]") {
+    throw new Error(
+      "POSTGRES_URL is Sensitive and cannot be read via vercel env pull. Migrations run in the Vercel build (see vercel.json buildCommand).",
     );
   }
   return url;
