@@ -2,8 +2,7 @@ import type { APIRoute } from "astro";
 import { waitUntil } from "@vercel/functions";
 
 import {
-  isValidNewsletterEmail,
-  normalizeNewsletterEmail,
+  parseNewsletterEmail,
   runNewsletterSubscribeSideEffects,
   subscribeNewsletterEmail,
   type NewsletterSubscriptionResult,
@@ -86,8 +85,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       return withRequestId(redirect("/newsletter/check-inbox"), requestId);
     }
     const raw = formData.get("email");
-    const email = typeof raw === "string" ? normalizeNewsletterEmail(raw) : "";
-    if (!email || !isValidNewsletterEmail(email)) {
+    const email = parseNewsletterEmail(raw);
+    if (!email) {
       captureServerOutcome({
         route: PH_ROUTE,
         outcome: "invalid_email",
