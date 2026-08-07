@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 
 import { absoluteRuntimeUrl } from "../config/site";
 import { envNewsletterTokenSecret } from "./server-env";
@@ -6,12 +7,16 @@ import { envNewsletterTokenSecret } from "./server-env";
 const verificationTokenLifetimeMs = 24 * 60 * 60 * 1000;
 const verificationTokenPurpose = "newsletter-verification";
 
-export interface NewsletterVerificationTokenPayload {
-  subscriberId: string;
-  email: string;
-  exp: number;
-  purpose: typeof verificationTokenPurpose;
-}
+const verificationTokenPayloadSchema = z.object({
+  subscriberId: z.string().min(1),
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  exp: z.number(),
+  purpose: z.literal(verificationTokenPurpose),
+});
+
+export type NewsletterVerificationTokenPayload = z.infer<
+  typeof verificationTokenPayloadSchema
+>;
 
 export type NewsletterVerificationTokenResult =
   | {
@@ -77,30 +82,13 @@ export function verifyNewsletterVerificationToken(
 
   try {
     const decoded = Buffer.from(encodedPayload, "base64url").toString("utf8");
-    const parsed = JSON.parse(decoded) as {
-      subscriberId?: unknown;
-      email?: unknown;
-      exp?: unknown;
-      purpose?: unknown;
-    };
+    const parsed = verificationTokenPayloadSchema.safeParse(
+      JSON.parse(decoded) as unknown,
+    );
+    if (!parsed.success) return { status: "invalid" };
 
-    if (
-      typeof parsed.subscriberId !== "string" ||
-      typeof parsed.email !== "string" ||
-      typeof parsed.exp !== "number" ||
-      parsed.purpose !== verificationTokenPurpose
-    ) {
-      return { status: "invalid" };
-    }
-
-    const payload: NewsletterVerificationTokenPayload = {
-      subscriberId: parsed.subscriberId,
-      email: parsed.email.toLowerCase(),
-      exp: parsed.exp,
-      purpose: verificationTokenPurpose,
-    };
-
-    if (!Number.isFinite(payload.exp) || payload.exp <= Date.now()) {
+    const payload = parsed.data;
+    if (payload.exp <= Date.now()) {
       return { status: "expired", payload };
     }
 

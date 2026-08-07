@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   buildNewsletterManageUrl,
   verifyNewsletterManageToken,
@@ -21,7 +22,13 @@ import {
 import { timed, type Timings } from "./timing";
 import { siteConfig } from "../config/site";
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Normalize + validate addresses we accept for subscribe / Resend send. */
+export const newsletterEmailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.email());
+
 const defaultSyncLimit = 25;
 const maxSyncErrorLength = 1000;
 const newsletterVerificationFromName = "labdm blog";
@@ -211,7 +218,13 @@ export function normalizeNewsletterEmail(email: string): string {
 }
 
 export function isValidNewsletterEmail(email: string): boolean {
-  return emailPattern.test(email);
+  return newsletterEmailSchema.safeParse(email).success;
+}
+
+/** Returns normalized email or `null` when invalid. */
+export function parseNewsletterEmail(raw: unknown): string | null {
+  const parsed = newsletterEmailSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
 }
 
 function isSubscriberVerified(
@@ -245,7 +258,7 @@ function getNewsletterVerificationFromEmail(): string {
 
 /**
  * Escape minimal HTML for newsletter verification emails only: addresses already
- * validated by `emailPattern` and internally generated verification URLs.
+ * validated by {@link newsletterEmailSchema} and internally generated verification URLs.
  * Ampersand is replaced first so literal `&` in input does not corrupt later
  * escapes. If this ever handles arbitrary user content, prefer a dedicated
  * library (e.g. `he`, `escape-html`).
@@ -504,81 +517,48 @@ type SubscribeRpcPayload = {
   subscriber: SubscriberRow;
 };
 
-const SUBSCRIBE_RPC_RESULTS: readonly NewsletterSubscriptionResult[] = [
-  "check-inbox",
-  "already-subscribed",
-  "resubscribed",
-];
+const subscriberRowSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  consent: z.boolean(),
+  status: z.enum(["subscribed", "unsubscribed"]),
+  sync_status: z.enum(["pending", "synced", "failed"]),
+  resend_contact_id: z.string().nullable(),
+  verified_at: z.string().nullable(),
+  verification_email_sent_at: z.string().nullable(),
+  created_at: z.string(),
+  subscribed_at: z.string(),
+  updated_at: z.string(),
+  unsubscribed_at: z.string().nullable(),
+  sync_requested_at: z.string(),
+  last_synced_at: z.string().nullable(),
+  last_sync_error: z.string().nullable(),
+  sync_attempt_count: z.number().int(),
+  last_webhook_at: z.string().nullable(),
+});
 
-function isNewsletterSubscriptionResult(
-  value: unknown,
-): value is NewsletterSubscriptionResult {
-  return (
-    typeof value === "string" &&
-    (SUBSCRIBE_RPC_RESULTS as readonly string[]).includes(value)
-  );
-}
-
-function isSubscriberRowPayload(value: unknown): value is SubscriberRow {
-  if (!value || typeof value !== "object") return false;
-  const o = value as Record<string, unknown>;
-  const statusOk = o.status === "subscribed" || o.status === "unsubscribed";
-  const syncOk =
-    o.sync_status === "pending" ||
-    o.sync_status === "synced" ||
-    o.sync_status === "failed";
-  return (
-    typeof o.id === "string" &&
-    typeof o.email === "string" &&
-    typeof o.consent === "boolean" &&
-    statusOk &&
-    syncOk &&
-    (o.resend_contact_id === null || typeof o.resend_contact_id === "string") &&
-    (o.verified_at === null || typeof o.verified_at === "string") &&
-    (o.verification_email_sent_at === null ||
-      typeof o.verification_email_sent_at === "string") &&
-    typeof o.created_at === "string" &&
-    typeof o.subscribed_at === "string" &&
-    typeof o.updated_at === "string" &&
-    (o.unsubscribed_at === null || typeof o.unsubscribed_at === "string") &&
-    typeof o.sync_requested_at === "string" &&
-    (o.last_synced_at === null || typeof o.last_synced_at === "string") &&
-    (o.last_sync_error === null || typeof o.last_sync_error === "string") &&
-    typeof o.sync_attempt_count === "number" &&
-    Number.isFinite(o.sync_attempt_count) &&
-    (o.last_webhook_at === null || typeof o.last_webhook_at === "string")
-  );
-}
+const subscribeRpcPayloadSchema = z.object({
+  result: z.enum(["check-inbox", "already-subscribed", "resubscribed"]),
+  subscriber: subscriberRowSchema,
+});
 
 function parseSubscribeRpcPayload(raw: unknown): SubscribeRpcPayload {
-  let parsed: unknown;
+  let parsed: unknown = raw;
   if (typeof raw === "string") {
     try {
       parsed = JSON.parse(raw) as unknown;
     } catch {
       throw new Error("Invalid newsletter_subscribe payload: malformed JSON.");
     }
-  } else {
-    parsed = raw;
   }
-  if (!parsed || typeof parsed !== "object") {
-    throw new Error("Invalid newsletter_subscribe payload: expected object.");
-  }
-  const payload = parsed as Record<string, unknown>;
-  if (!isNewsletterSubscriptionResult(payload.result)) {
+
+  const result = subscribeRpcPayloadSchema.safeParse(parsed);
+  if (!result.success) {
     throw new Error(
-      "Invalid newsletter_subscribe payload: missing or bad result.",
+      `Invalid newsletter_subscribe payload: ${result.error.issues[0]?.message ?? "validation failed"}.`,
     );
   }
-  if (!isSubscriberRowPayload(payload.subscriber)) {
-    throw new Error(
-      "Invalid newsletter_subscribe payload: missing or invalid subscriber.",
-    );
-  }
-  return {
-    result: payload.result,
-    subscriber: payload.subscriber,
-  };
+  return result.data;
 }
 
 /**
@@ -594,8 +574,8 @@ export async function subscribeNewsletterEmail(
 }> {
   requireDatabaseConfigured();
 
-  const email = normalizeNewsletterEmail(rawEmail);
-  if (!isValidNewsletterEmail(email)) {
+  const email = parseNewsletterEmail(rawEmail);
+  if (!email) {
     throw new Error("Invalid newsletter email.");
   }
 
