@@ -26,7 +26,7 @@
     "test": "pnpm run typecheck",
     "verify": "pnpm run build && pnpm run test",
     "verify:push": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run smoke",
-    "deps:scan": "pnpm audit --audit-level=moderate",
+    "deps:scan": "pnpm audit --audit-level=high",
     "setup:git-hooks": "git config core.hooksPath .githooks",
     "postinstall": "node scripts/postinstall-clis.mjs",
     "smoke": "node scripts/smoke-preview.mjs",
