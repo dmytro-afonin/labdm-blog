@@ -25,42 +25,46 @@ jobs:
         with:
           node-version-file: ".node-version"
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.2.0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: "1.3.14"
+          version: 12.21.0
 
-      - name: Cache Bun packages
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm packages
         uses: actions/cache@v5
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          path: ${{ steps.pnpm-cache.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Scan dependencies for known vulnerabilities
-        run: bun pm scan
+        run: pnpm audit
 
       - name: Check formatting
-        run: bun run format:check
+        run: pnpm run format:check
 
       - name: Lint code
-        run: bun run lint:code
+        run: pnpm run lint:code
 
       - name: Lint styles
-        run: bun run lint:styles
+        run: pnpm run lint:styles
 
       - name: Run type checks
-        run: bun run typecheck
+        run: pnpm run typecheck
 
       - name: Build site
-        run: bun run build
+        run: pnpm run build
 
       - name: Run smoke validation
-        run: bun run smoke
+        run: pnpm run smoke
 
   vercel_config:
     name: Vercel Config
@@ -111,24 +115,28 @@ jobs:
         with:
           node-version-file: ".node-version"
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.2.0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: "1.3.14"
+          version: 12.21.0
 
-      - name: Cache Bun packages
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm packages
         uses: actions/cache@v5
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          path: ${{ steps.pnpm-cache.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Pull Vercel environment
-        run: bunx --bun vercel@58.8.0 pull --yes --environment=preview --token="$VERCEL_TOKEN"
+        run: pnpm dlx vercel@58.8.0 pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
       - name: Create preview deployment record
         id: github_preview_deployment
@@ -162,7 +170,7 @@ jobs:
       - name: Deploy preview
         id: deploy
         run: |
-          deployment_url="$(bunx --bun vercel@58.8.0 deploy --yes --token="$VERCEL_TOKEN")"
+          deployment_url="$(pnpm dlx vercel@58.8.0 deploy --yes --token="$VERCEL_TOKEN")"
           if [[ ! "$deployment_url" =~ ^https:// ]]; then
             echo "::error::Expected a deployment URL from Vercel, got: $deployment_url"
             exit 1
@@ -267,26 +275,30 @@ jobs:
         with:
           node-version-file: ".node-version"
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.2.0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: "1.3.14"
+          version: 12.21.0
 
-      - name: Cache Bun packages
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm packages
         uses: actions/cache@v5
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          path: ${{ steps.pnpm-cache.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Resolve production site URL
         id: production_site_url
         run: |
-          production_site_url="$(bun -e "import { siteConfig } from './src/config/site.ts'; console.log(siteConfig.url)" | tr -d '\r')"
+          production_site_url="$(pnpm exec tsx -e "import { siteConfig } from './src/config/site.ts'; console.log(siteConfig.url)" | tr -d '\r')"
           if [[ ! "$production_site_url" =~ ^https:// ]]; then
             echo "::error::Expected an https production URL from src/config/site.ts, got: $production_site_url"
             exit 1
@@ -294,7 +306,7 @@ jobs:
           echo "production_site_url=$production_site_url" >> "$GITHUB_OUTPUT"
 
       - name: Pull Vercel environment
-        run: bunx --bun vercel@58.8.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+        run: pnpm dlx vercel@58.8.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Create production deployment record
         id: github_production_deployment
@@ -326,7 +338,7 @@ jobs:
 
       # Remote build so Sensitive env (e.g. Neon POSTGRES_URL) is available for db:migrate.
       - name: Deploy production
-        run: bunx --bun vercel@58.8.0 deploy --prod --yes --token="$VERCEL_TOKEN"
+        run: pnpm dlx vercel@58.8.0 deploy --prod --yes --token="$VERCEL_TOKEN"
 
       - name: Report production deployment success to GitHub
         if: success() && steps.github_production_deployment.outputs.deployment_id != ''

@@ -4,8 +4,8 @@
 
 ## Validation
 
-- [ ] `bun run check`
-- [ ] `bun run build`
+- [ ] `pnpm run check`
+- [ ] `pnpm run build`
 - [ ] Verified the relevant UI or behavior locally
 
 ## Deployment

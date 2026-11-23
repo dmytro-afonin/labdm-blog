@@ -19,8 +19,8 @@ A **personal / lab tech blog** at the canonical host `https://blog.labdm.dev` �
 ## Personas (lightweight)
 
 - **Reader** — skims home, opens posts, may subscribe, uses RSS.
-- **Author (you)** — writes `src/content/posts/*.md`, runs `bun run build`, opens PRs.
-- **Operator** — manages Neon, Resend webhooks, Vercel env, and occasional `bun run newsletter:sync*`.
+- **Author (you)** — writes `src/content/posts/*.md`, runs `pnpm run build`, opens PRs.
+- **Operator** — manages Neon, Resend webhooks, Vercel env, and occasional `pnpm run newsletter:sync*`.
 
 ## Success metrics (product-level, optional)
 

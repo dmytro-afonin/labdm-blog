@@ -8,3 +8,6 @@ node_modules
 
 # Obsidian app data and plugin bundles (not maintained to Prettier; avoid churn)
 obsidian-docs/.obsidian/
+
+# pnpm owns the lockfile format; Prettier rewrites it unnecessarily
+pnpm-lock.yaml

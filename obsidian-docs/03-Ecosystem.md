@@ -39,19 +39,19 @@ flowchart LR
 ## Vercel
 
 - **Adapter** — `@astrojs/vercel` in `astro.config.ts`; `output: "static"` with **opt-in** `prerender: false` on server routes (e.g. API). **`middlewareMode: "edge"`** runs `src/middleware.ts` on the edge (response `x-request-id`).
-- **`vercel.json`** — `git.deploymentEnabled: false` so **no** automatic Git deploys from Vercel; deploys run from GitHub Actions after Quality passes. May include **`devCommand`: `bun run dev`** (Astro only) for `vercel dev`, and **`regions`** (e.g. `iad1` near Neon **`us-east-1`**).
-- **Install/build** — `bun install --frozen-lockfile`, `bun run build` on Vercel-compatible build.
+- **`vercel.json`** — `git.deploymentEnabled: false` so **no** automatic Git deploys from Vercel; deploys run from GitHub Actions after Quality passes. May include **`devCommand`: `pnpm run dev`** (Astro only) for `vercel dev`, and **`regions`** (e.g. `iad1` near Neon **`us-east-1`**).
+- **Install/build** — `pnpm install --frozen-lockfile`, `pnpm run build` on Vercel-compatible build.
 
-## Bun
+## pnpm
 
-- **Package manager** — `bun@1.3.14` (see `package.json`). Scripts for dev, build, newsletter maintenance, smoke test.
-- **Install layout** — `bunfig.toml` sets `install.linker = "isolated"` and disables the shared store fallback (`hoist = false`, empty `hoistPattern`) so dependency resolution is pnpm-like: packages only see what they declare.
-- **Install policy** — `minimumReleaseAge = 86400` (1 day), `exact = true`, Socket security scanner at install (`@socketsecurity/bun-security-scanner`), and explicit `trustedDependencies` (`sharp`, `esbuild`) for lifecycle scripts. CI runs `bun pm scan` after install. (`globalStore` left off: it breaks Stylelint resolving `postcss-html` under isolated installs.)
+- **Package manager** — `pnpm@12.21.0` (see `package.json`). Scripts for dev, build, newsletter maintenance, smoke test.
+- **Install layout** — `.npmrc` sets `install.linker = "isolated"` and disables the shared store fallback (`hoist = false`, empty `hoistPattern`) so dependency resolution is pnpm-like: packages only see what they declare.
+- **Install policy** — `minimumReleaseAge = 86400` (1 day), `allowBuilds` for `sharp` and `esbuild` lifecycle scripts, with the shared global pnpm store. CI runs `pnpm audit` after install. (`globalStore` left off: it breaks Stylelint resolving `postcss-html` under isolated installs.)
 
 ## Neon (Postgres)
 
 - **Connection** — `POSTGRES_URL` (see `src/lib/neon.ts`, server env validation).
-- **Migrations** — `db/migrations/*.sql` applied by `bun run db:migrate` (CI before Preview/Production deploy).
+- **Migrations** — `db/migrations/*.sql` applied by `pnpm run db:migrate` (CI before Preview/Production deploy).
 - **Role** — subscribers as **source of truth**; sync state and Resend contact id stored on rows; `subscriber_sync_events` for audit.
 
 ## Resend

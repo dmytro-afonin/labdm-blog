@@ -1,6 +1,6 @@
 # Project map
 
-Central entry for product, engineering, and planning in this **repo** (Astro, Bun, Vercel, Neon, Resend). This vault supplements Linear; work items may still use historical IDs (LAB-\*).
+Central entry for product, engineering, and planning in this **repo** (Astro, pnpm, Vercel, Neon, Resend). This vault supplements Linear; work items may still use historical IDs (LAB-\*).
 
 | Doc                                | What it holds                                                 |
 | ---------------------------------- | ------------------------------------------------------------- |

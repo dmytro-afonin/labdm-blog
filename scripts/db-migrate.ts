@@ -2,8 +2,8 @@
  * Apply pending SQL files from db/migrations/ against Neon/Postgres.
  *
  * Usage:
- *   bun run db:migrate
- *   bun run db:migrate -- --dry-run
+ *   pnpm run db:migrate
+ *   pnpm run db:migrate -- --dry-run
  *
  * Connection: POSTGRES_URL (preferred) or DATABASE_URL.
  * Loads .env.local / .env / .vercel/.env.*.local when those vars are unset.

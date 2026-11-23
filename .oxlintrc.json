@@ -19,7 +19,7 @@
     {
       "files": [".cursor/hooks/**/*.mjs", "scripts/**/*.{js,mjs,ts}"],
       "globals": {
-        "Bun": "readonly"
+        "process": "readonly"
       }
     }
   ]

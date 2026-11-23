@@ -4,8 +4,8 @@
   "git": {
     "deploymentEnabled": false
   },
-  "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "bun run db:migrate && bun run build",
-  "devCommand": "bun run dev",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run db:migrate && pnpm run build",
+  "devCommand": "pnpm run dev",
   "regions": ["iad1"]
 }

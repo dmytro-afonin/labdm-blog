@@ -137,7 +137,7 @@ flowchart TD
 - Inside `subscribeNewsletterEmail` when re-subscribing a **verified** previously-unsubscribed email, or when **verified** but contact not fully synced.
 - **Not** called at the end of `performNewsletterManageAction` (unsubscribe / resubscribe from manage page) — those only run `updateSubscriberStatus`, which sets `sync_status = 'pending'`. A later **batch sync** or user-driven path must run `syncPendingSubscribers`.
 
-**Batch:** `bun run newsletter:sync` → `scripts/newsletter-sync.ts` → `syncPendingSubscribers(limit?)` which loads rows with `verified_at IS NOT NULL` and `sync_status IN ('pending','failed')` ordered by `sync_requested_at`, then calls `syncSubscriberNow` per row.
+**Batch:** `pnpm run newsletter:sync` → `scripts/newsletter-sync.ts` → `syncPendingSubscribers(limit?)` which loads rows with `verified_at IS NOT NULL` and `sync_status IN ('pending','failed')` ordered by `sync_requested_at`, then calls `syncSubscriberNow` per row.
 
 ---
 
