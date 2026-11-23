@@ -39,7 +39,7 @@ flowchart LR
 ## Vercel
 
 - **Adapter** — `@astrojs/vercel` in `astro.config.ts`; `output: "static"` with **opt-in** `prerender: false` on server routes (e.g. API). **`middlewareMode: "edge"`** runs `src/middleware.ts` on the edge (response `x-request-id`).
-- **`vercel.json`** — `git.deploymentEnabled: false` so **no** automatic Git deploys from Vercel; deploys run from GitHub Actions after Quality passes. May include **`devCommand`: `pnpm run dev`** (Astro only) for `vercel dev`, and **`regions`** (e.g. `iad1` near Neon **`us-east-1`**).
+- **`vercel.json`** — Git deployments are enabled: Vercel deploys PR previews and `main` directly; GitHub Actions only validates.
 - **Install/build** — `pnpm install --frozen-lockfile`, `pnpm run build` on Vercel-compatible build.
 
 ## pnpm

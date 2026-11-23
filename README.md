@@ -1,6 +1,6 @@
 # labdm-blog
 
-A pnpm-based Astro blog with GitHub-based delivery and Vercel deployment automation.
+A pnpm-based Astro blog with GitHub Actions validation and Vercel Git deployments.
 
 ## Stack
 
@@ -8,7 +8,7 @@ A pnpm-based Astro blog with GitHub-based delivery and Vercel deployment automat
 - Bun for installs and scripts (`.npmrc`: **isolated** linker, no dependency hoisting, 1-day `minimumReleaseAge`, Socket install scanner, `exact` versions on add)
 - TypeScript 6 + `astro check` (TS 7 blocked until `@astrojs/check` supports it)
 - Oxlint + Prettier + Stylelint for quality gates
-- GitHub Actions for validation and Vercel deploy orchestration
+- GitHub Actions for validation; Vercel Git integration for deploys
 - Vercel for preview and production hosting
 
 ## Production domain assumptions
@@ -87,14 +87,10 @@ Recommended Resend setup:
 ## Deployment flow
 
 - Pull requests and pushes to `main` run the `Quality` job (format, lint, typecheck, build, smoke).
-- `vercel.json` disables Vercel’s automatic Git deploys so pushes do not build on Vercel until CI passes.
-- After **Quality** succeeds, GitHub Actions deploys **preview** (on PRs) and **production** (on `main`) with the Vercel CLI and your repo secrets. Deploy jobs are skipped if `VERCEL_*` secrets are missing.
+- `vercel.json` leaves Vercel Git deployments enabled, so PRs and `main` deploy directly on Vercel.
+- Vercel's GitHub integration deploys **preview** (on PRs) and **production** (on `main`); the remote build runs `pnpm run db:migrate && pnpm run build`.
 - Production is expected to serve `https://blog.labdm.dev`.
 
-Required repository secrets for deploys:
-
-- `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
+No `VERCEL_*` repository secrets are needed for deploys.
 
 See `CONTRIBUTING.md` for branch protection and merge policy.
