@@ -17,17 +17,17 @@
 
 ## Local checks
 
-Use `bun run dev` for day-to-day work; use `bun run dev:vercel` when you need Vercel-local routing and project env (see `README.md`).
+Use `pnpm run dev` for day-to-day work; use `pnpm run dev:vercel` when you need Vercel-local routing and project env (see `README.md`).
 
 Run these before opening or updating a pull request:
 
 ```bash
-bun install --frozen-lockfile
-bun run format:check
-bun run lint
-bun run typecheck
-bun run build
-bun run smoke
+pnpm install --frozen-lockfile
+pnpm run format:check
+pnpm run lint
+pnpm run typecheck
+pnpm run build
+pnpm run smoke
 ```
 
 ## Deployment secrets

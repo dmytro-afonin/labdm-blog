@@ -60,5 +60,5 @@
 
 ## Build / preview
 
-- **`bun run build`** — fails on schema violations in frontmatter.
-- **`bun run smoke`** — fetches local preview and checks for expected HTML snippets (see `package.json` `smoke.expectedSnippets`).
+- **`pnpm run build`** — fails on schema violations in frontmatter.
+- **`pnpm run smoke`** — fetches local preview and checks for expected HTML snippets (see `package.json` `smoke.expectedSnippets`).

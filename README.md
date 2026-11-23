@@ -1,14 +1,14 @@
 # labdm-blog
 
-A Bun-first Astro blog with GitHub-based delivery and Vercel deployment automation.
+A pnpm-based Astro blog with GitHub Actions validation and Vercel Git deployments.
 
 ## Stack
 
 - Astro 7 (Vite 8) for the site
-- Bun for installs and scripts (`bunfig.toml`: **isolated** linker, no dependency hoisting, 1-day `minimumReleaseAge`, Socket install scanner, `exact` versions on add)
+- Bun for installs and scripts (`.npmrc`: **isolated** linker, no dependency hoisting, 1-day `minimumReleaseAge`, Socket install scanner, `exact` versions on add)
 - TypeScript 6 + `astro check` (TS 7 blocked until `@astrojs/check` supports it)
 - Oxlint + Prettier + Stylelint for quality gates
-- GitHub Actions for validation and Vercel deploy orchestration
+- GitHub Actions for validation; Vercel Git integration for deploys
 - Vercel for preview and production hosting
 
 ## Production domain assumptions
@@ -20,20 +20,20 @@ A Bun-first Astro blog with GitHub-based delivery and Vercel deployment automati
 ## Local development
 
 ```bash
-bun install
-bun run dev
+pnpm install
+pnpm run dev
 ```
 
-- **`bun run dev`** — Astro dev server (default). API routes work here.
-- **`bun run dev:vercel`** — `bunx vercel@58.8.0 dev` with Vercel routing and env parity. The CLI is **not** a package.json dependency (Vercel’s remote builder ignores it and warns if present). The `dev` script must stay **`astro dev`** so `vercel dev` does not recurse; `vercel.json` sets `devCommand` to `bun run dev`.
+- **`pnpm run dev`** — Astro dev server (default). API routes work here.
+- **`pnpm run dev:vercel`** — `pnpm exec vercel@58.8.0 dev` with Vercel routing and env parity. The CLI is **not** a package.json dependency (Vercel’s remote builder ignores it and warns if present). The `dev` script must stay **`astro dev`** so `vercel dev` does not recurse; `vercel.json` sets `devCommand` to `pnpm run dev`.
 
 Useful scripts:
 
-- `bun run typecheck`
-- `bun run build`
-- `bun run build && bun run preview` — static server for `dist/client` (Vercel adapter output; run `build` first). Use `bun run dev` for API routes.
-- `bun run newsletter:sync`
-- `bun run newsletter:sync:report`
+- `pnpm run typecheck`
+- `pnpm run build`
+- `pnpm run build && pnpm run preview` — static server for `dist/client` (Vercel adapter output; run `build` first). Use `pnpm run dev` for API routes.
+- `pnpm run newsletter:sync`
+- `pnpm run newsletter:sync:report`
 
 ## Newsletter subscriber platform
 
@@ -51,7 +51,7 @@ Environment variables:
 - `NEWSLETTER_TOKEN_SECRET`
 - `PUBLIC_POSTHOG_PROJECT_TOKEN` / `PUBLIC_POSTHOG_HOST` (optional) — server-side PostHog in API routes only; no browser SDK bundle on static pages.
 
-**Database migrations:** SQL lives in `db/migrations/`. Apply with `bun run db:migrate` (uses `POSTGRES_URL` or `DATABASE_URL`). On Vercel, `buildCommand` runs migrations before the site build so **Sensitive** Neon URLs work (they are not readable via `vercel env pull`). For local migrate, paste the connection string from Neon into `.env.local`. Use `bun run db:migrate:dry-run` to list pending files. Never edit an already-applied migration — add a new numbered file instead.
+**Database migrations:** SQL lives in `db/migrations/`. Apply with `pnpm run db:migrate` (uses `POSTGRES_URL` or `DATABASE_URL`). On Vercel, `buildCommand` runs migrations before the site build so **Sensitive** Neon URLs work (they are not readable via `vercel env pull`). For local migrate, paste the connection string from Neon into `.env.local`. Use `pnpm run db:migrate:dry-run` to list pending files. Never edit an already-applied migration — add a new numbered file instead.
 
 **Runtime:** `vercel.json` can set `regions` (e.g. `iad1`) near **Neon in `us-east-1`** to reduce DB latency. Edge middleware adds **`x-request-id`** on responses (aligned with Vercel’s id when present) for logs and PostHog.
 
@@ -68,9 +68,9 @@ Current subscriber flows:
   when needed, so the redirect is not blocked on Resend.
 - `/newsletter/manage/[token]` lets a subscriber unsubscribe or re-subscribe
   via a signed management link.
-- `bun run newsletter:sync` manually pushes verified subscribers that are in a
+- `pnpm run newsletter:sync` manually pushes verified subscribers that are in a
   pending sync state or that previously failed to sync to Resend Contacts.
-- `bun run newsletter:sync:report` prints sync counts, including unverified
+- `pnpm run newsletter:sync:report` prints sync counts, including unverified
   local subscribers that are still waiting on email confirmation.
 - `POST /api/webhooks/resend/contacts` reconciles Resend `contact.created`,
   `contact.updated`, and `contact.deleted` events back into Neon.
@@ -81,20 +81,16 @@ Recommended Resend setup:
 2. Subscribe that webhook to `contact.created`, `contact.updated`, and
    `contact.deleted`.
 3. Store the webhook signing secret in `RESEND_WEBHOOK_SECRET`.
-4. Use `bun run newsletter:sync` only for retries or backlog cleanup when
+4. Use `pnpm run newsletter:sync` only for retries or backlog cleanup when
    `newsletter:sync:report` shows failed or pending rows.
 
 ## Deployment flow
 
 - Pull requests and pushes to `main` run the `Quality` job (format, lint, typecheck, build, smoke).
-- `vercel.json` disables Vercel’s automatic Git deploys so pushes do not build on Vercel until CI passes.
-- After **Quality** succeeds, GitHub Actions deploys **preview** (on PRs) and **production** (on `main`) with the Vercel CLI and your repo secrets. Deploy jobs are skipped if `VERCEL_*` secrets are missing.
+- `vercel.json` leaves Vercel Git deployments enabled, so PRs and `main` deploy directly on Vercel.
+- Vercel's GitHub integration deploys **preview** (on PRs) and **production** (on `main`); the remote build runs `pnpm run db:migrate && pnpm run build`.
 - Production is expected to serve `https://blog.labdm.dev`.
 
-Required repository secrets for deploys:
-
-- `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
+No `VERCEL_*` repository secrets are needed for deploys.
 
 See `CONTRIBUTING.md` for branch protection and merge policy.

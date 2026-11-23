@@ -1,6 +1,6 @@
 /**
- * Shared env for Astro (Vite injects `import.meta.env`) and Bun CLI scripts
- * (`bun run scripts/...`), where `.env` is only on `process.env`.
+ * Shared env for Astro (Vite injects `import.meta.env`) and pnpm-executed CLI
+ * scripts (`pnpm exec tsx scripts/...`), where `.env` is only on `process.env`.
  */
 function pick(...candidates: Array<string | undefined>): string | undefined {
   for (const c of candidates) {

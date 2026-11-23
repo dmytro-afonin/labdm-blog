@@ -40,7 +40,7 @@ This shows how to:
 ### 1. Install dependencies
 
 ```bash
-npm install
+pnpm install
 # or
 pnpm install
 ```
@@ -59,7 +59,7 @@ Get your PostHog project token from your project settings in PostHog.
 ### 3. Run the development server
 
 ```bash
-npm run dev
+pnpm run dev
 # or
 pnpm dev
 ```
@@ -174,13 +174,13 @@ Use hybrid mode when you want:
 
 ```bash
 # Run dev server
-npm run dev
+pnpm run dev
 
 # Build for production
-npm run build
+pnpm run build
 
 # Preview production build
-npm run preview
+pnpm run preview
 ```
 
 ## Learn more

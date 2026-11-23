@@ -62,7 +62,7 @@ Link: https://neon.com/docs/ai/skills/neon-postgres/references/neon-js.md
 
 ## Developer Tools
 
-Use this for local development enablement with `npx neonctl@latest init`, VSCode extension setup, and Neon MCP server configuration.
+Use this for local development enablement with `pnpm exec neonctl@latest init`, VSCode extension setup, and Neon MCP server configuration.
 
 Link: https://neon.com/docs/ai/skills/neon-postgres/references/devtools.md
 

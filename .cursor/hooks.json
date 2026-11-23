@@ -4,12 +4,12 @@
   "hooks": {
     "afterFileEdit": [
       {
-        "command": "bun ./.cursor/hooks/after-file-edit.mjs"
+        "command": "node ./.cursor/hooks/after-file-edit.mjs"
       }
     ],
     "stop": [
       {
-        "command": "bun ./.cursor/hooks/on-stop.mjs"
+        "command": "node ./.cursor/hooks/on-stop.mjs"
       }
     ]
   }

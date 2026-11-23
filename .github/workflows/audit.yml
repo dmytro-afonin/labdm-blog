@@ -1,0 +1,42 @@
+name: Dependency audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: pnpm audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.21.0
+
+      # Non-blocking while existing advisories are being worked off.
+      # Set continue-on-error to false once audits are clean everywhere.
+      - name: Scan dependencies (high+)
+        continue-on-error: true
+        run: |
+          set +e
+          pnpm run deps:scan > "$RUNNER_TEMP/audit.txt" 2>&1
+          status=$?
+          cat "$RUNNER_TEMP/audit.txt"
+          {
+            echo "### pnpm audit"
+            echo
+            echo '```text'
+            cat "$RUNNER_TEMP/audit.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

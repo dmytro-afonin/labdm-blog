@@ -1,5 +1,5 @@
 /**
- * Optional global CLI setup after `bun install` / `npm install`.
+ * Optional global CLI setup after `pnpm install`.
  *
  * Skips entirely when CI is set (e.g. CI=true or CI=1) or SKIP_OPTIONAL_CLIS=1.
  *
@@ -10,19 +10,17 @@
  * After fnm is available, runs `fnm install` in the repo root when `.node-version` exists.
  *
  * Already provided without a global install:
- * - Vercel CLI → `bunx --bun vercel@58.8.0` (not a package.json dependency;
+ * - Vercel CLI → `pnpm dlx vercel@58.8.0` (not a package.json dependency;
  *   Vercel’s remote builder ignores a local `vercel` package and warns if present)
- * - Astro, Oxlint, Prettier, Stylelint → `bunx …` / local bin from package.json
+ * - Astro, Oxlint, Prettier, Stylelint → `pnpm exec …` / local bin from package.json
  *
  * Node version for fnm / nvm / asdf: see `.node-version` in the repo root.
- * Bun must be installed separately (see https://bun.sh ).
- *
- * Git: sets `core.hooksPath` to `.githooks` when unset (skipped in CI and when
+ *  * Git: sets `core.hooksPath` to `.githooks` when unset (skipped in CI and when
  * SKIP_GIT_HOOKS_SETUP=1). Optional CLIs are skipped when CI or SKIP_OPTIONAL_CLIS=1.
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -152,7 +150,20 @@ function tryFnmSyncNode() {
   if (!existsSync(versionFile) || !hasCmd("fnm")) {
     return;
   }
-  log("Syncing Node from .node-version (`fnm install`)…");
+  const wanted = readFileSync(versionFile, "utf-8").trim().replace(/^v/, "");
+  const current = spawnSync(process.execPath, ["--version"], {
+    encoding: "utf-8",
+  });
+  const actual = (current.stdout ?? "").trim().replace(/^v/, "");
+  if (wanted.split(".")[0] === actual.split(".")[0]) {
+    log(
+      `Node ${actual} already matches .node-version major (${wanted}); skipping fnm install.`,
+    );
+    return;
+  }
+  log(
+    `Node ${actual || "unknown"} does not match .node-version (${wanted}); running fnm install…`,
+  );
   const r = spawnSync("fnm", ["install"], { cwd: root, stdio: "inherit" });
   if (r.status !== 0) {
     log("fnm install failed; run `fnm install` in the repo root after setup.");
@@ -170,7 +181,7 @@ function trySetupGitHooks() {
   }
   if (!hasCmd("git")) {
     log(
-      "Git hooks: `git` not found; run `bun run setup:git-hooks` after installing Git.",
+      "Git hooks: `git` not found; run `pnpm run setup:git-hooks` after installing Git.",
     );
     return;
   }
@@ -195,7 +206,7 @@ function trySetupGitHooks() {
     stdio: "inherit",
   });
   if (set.status !== 0) {
-    log("Could not set core.hooksPath; run manually: bun run setup:git-hooks");
+    log("Could not set core.hooksPath; run manually: pnpm run setup:git-hooks");
   }
 }
 
@@ -203,7 +214,7 @@ if (skipOptionalClis) {
   log("Skipping optional global CLIs (CI or SKIP_OPTIONAL_CLIS=1).");
 } else {
   log(
-    "Project CLIs: use `bunx --bun vercel@58.8.0`, `bunx astro`, `bunx oxlint`, etc.",
+    "Project CLIs: use `pnpm dlx vercel@58.8.0`, `pnpm exec astro`, `pnpm exec oxlint`, etc.",
   );
 
   if (process.env.SKIP_CODERABBIT_CLI !== "1") {

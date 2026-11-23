@@ -48,7 +48,7 @@ During development you may choose to show drafts on listing pages; gate that wit
 ## Workflow
 
 1. Copy an existing post or add `my-first-article.md` under `src/content/posts/`.
-2. Fill required frontmatter; run `bun run build` or `bun run dev` to catch schema errors early.
+2. Fill required frontmatter; run `pnpm run build` or `pnpm run dev` to catch schema errors early.
 3. Write the body in Markdown below the closing `---`.
 
 ## Related files

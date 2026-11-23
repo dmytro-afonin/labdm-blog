@@ -14,7 +14,7 @@
 
 **Decision:** **Neon serverless Postgres** is the system of record for `subscribers` and sync metadata; Astro **Route handlers** + `@neondatabase/serverless` perform writes/reads.
 
-**Consequence:** No real-time DB subscriptions from the server product; for a newsletter this is acceptable. Schema changes are ordered SQL in `db/migrations/`, applied by `bun run db:migrate` (tracked in `schema_migrations`). Preview/Production deploys use a Vercel remote build so Sensitive `POSTGRES_URL` is available; `vercel.json` `buildCommand` runs migrate then `bun run build`.
+**Consequence:** No real-time DB subscriptions from the server product; for a newsletter this is acceptable. Schema changes are ordered SQL in `db/migrations/`, applied by `pnpm run db:migrate` (tracked in `schema_migrations`). Preview/Production deploys use a Vercel remote build so Sensitive `POSTGRES_URL` is available; `vercel.json` `buildCommand` runs migrate then `pnpm run build`.
 
 ## Excerpt RSS as default
 
@@ -26,7 +26,7 @@
 
 **Context:** Broken builds on `main` waste time and hurt trust.
 
-**Decision:** `vercel.json` disables automatic Git-triggered Vercel deploys; **GitHub Actions** runs Quality then **conditionally** runs Vercel deploy with CLI when `VERCEL_`\* secrets exist.
+**Decision:** Vercel's GitHub integration deploys PR previews and `main` automatically; **GitHub Actions** runs Quality only. No `VERCEL_*` secrets are required.
 
 **Consequence:** Slightly more CI configuration; predictability in what reaches preview/production.
 

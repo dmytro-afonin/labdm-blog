@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: true
+  sharp: true
+# Supply-chain cool-down: new resolves must be at least 1 day old.
+minimumReleaseAge: 1440

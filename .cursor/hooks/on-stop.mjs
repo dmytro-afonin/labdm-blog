@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,10 +7,10 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const root = resolve(scriptDir, "../..");
 
 // Drain stdin so the hook process does not block waiting on a pipe; the payload
-// from Cursor is not used here — `await Bun.stdin.text()` intentionally discards it.
-await Bun.stdin.text();
+// from Cursor is not used here, so reading it discards it.
+readFileSync(0, "utf-8");
 
-const result = spawnSync("bun", ["run", "verify"], {
+const result = spawnSync("pnpm", ["run", "verify"], {
   cwd: root,
   encoding: "utf-8",
   env: process.env,
@@ -30,7 +31,7 @@ if (ok) {
   console.log(
     JSON.stringify({
       followup_message:
-        "Verify failed after this agent run (see hook output on stderr: `bun run verify` = build + typecheck). Fix the errors, run `bun run verify` locally until it passes, and avoid leaving the repo in a broken state. If the same failure repeats, summarize the blocker for the user instead of looping.",
+        "Verify failed after this agent run (see hook output on stderr: `pnpm run verify` = build + typecheck). Fix the errors, run `pnpm run verify` locally until it passes, and avoid leaving the repo in a broken state. If the same failure repeats, summarize the blocker for the user instead of looping.",
     }),
   );
 }

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, extname, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,7 +17,7 @@ function shouldSkip(absPath) {
 
 let payload;
 try {
-  payload = JSON.parse((await Bun.stdin.text()) || "{}");
+  payload = JSON.parse(readFileSync(0, "utf-8") || "{}");
 } catch {
   process.exit(0);
 }
@@ -80,18 +80,27 @@ function run(cmd, args) {
 
 if (
   PRETTIER_EXT.has(ext) &&
-  run("bunx", ["prettier", "--write", resolved]) !== 0
+  run("pnpm", ["exec", "prettier", "--write", resolved]) !== 0
 ) {
   process.exit(1);
 }
 
-if (OXLINT_EXT.has(ext) && run("bunx", ["oxlint", "--fix", resolved]) !== 0) {
+if (
+  OXLINT_EXT.has(ext) &&
+  run("pnpm", ["exec", "oxlint", "--fix", resolved]) !== 0
+) {
   process.exit(1);
 }
 
 if (
   STYLELINT_EXT.has(ext) &&
-  run("bunx", ["stylelint", resolved, "--fix", "--allow-empty-input"]) !== 0
+  run("pnpm", [
+    "exec",
+    "stylelint",
+    resolved,
+    "--fix",
+    "--allow-empty-input",
+  ]) !== 0
 ) {
   process.exit(1);
 }

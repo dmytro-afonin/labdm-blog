@@ -24,7 +24,7 @@ const expectedSnippets = packageJson.smoke?.expectedSnippets ?? [];
 
 if (!distIndexPath) {
   throw new Error(
-    "Build output is missing. Run `bun run build` before `bun run smoke`.",
+    "Build output is missing. Run `pnpm run build` before `pnpm run smoke`.",
   );
 }
 
