@@ -28,8 +28,10 @@ jobs:
       - name: Scan dependencies (high+)
         continue-on-error: true
         run: |
-          set -o pipefail
-          pnpm run deps:scan 2>&1 | tee "$RUNNER_TEMP/audit.txt"
+          set +e
+          pnpm run deps:scan > "$RUNNER_TEMP/audit.txt" 2>&1
+          status=$?
+          cat "$RUNNER_TEMP/audit.txt"
           {
             echo "### pnpm audit"
             echo
@@ -37,3 +39,4 @@ jobs:
             cat "$RUNNER_TEMP/audit.txt"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
